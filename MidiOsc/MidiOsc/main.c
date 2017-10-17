@@ -11,39 +11,42 @@
 
 
 // GLOBAL VARIABLES
-static const int g_sampleRate = 48000;
-static const double g_pi = 3.14159265359;
-static const double g_tau = 2 * g_pi;
+const int g_sampleRate = 48000;
+const double g_pi = 3.14159265359;
+const double g_tau = 2 * g_pi;
 
 
 // FUNCTION PROTOTYPES
 double midiToFrequency(int midiNote);
-void printSamples(int duration, double frequency);
+double printSamples(int duration, double frequency);
     // Takes duration in miliseconds and required oscillator frequency.
+    // Returns angle in radians for calulating final sample.
 
 
 int main(int argc, const char * argv[]) {
     
     printSamples(1, 249);
-    printSamples(1, 1020);
+    printf("%.6f\n", sin(printSamples(1, 1020)));
     
     
     return 0;
 }
 
-void printSamples(int duration, double frequency) {
+double printSamples(int duration, double frequency) {
     
-    static double phase = 0;
-        // Phase is stored between function calls.
+    static double lastRadianAngle = 0;
+        // Angle is stored between function calls.
     
     for(int sampleIndex = 0; sampleIndex < duration * g_sampleRate / 1000; ++sampleIndex) {
-        printf("%.6f\n", sin(fmod((g_tau * frequency  * sampleIndex / g_sampleRate) + phase, g_tau)));
+        printf("%.6f\n", sin(fmod((g_tau * frequency  * sampleIndex / g_sampleRate) + lastRadianAngle, g_tau)));
         // Modulus radian value to avoid overflow.
     }
     
     // Set phase by taking the radian value used to calulate NEXT sample as this will be the starting
     // sample of the next oscillation.
-    phase = fmod((g_tau * frequency  * (duration * g_sampleRate / 1000) / g_sampleRate) + phase, g_tau);
+    lastRadianAngle = fmod((g_tau * frequency  * (duration * g_sampleRate / 1000) / g_sampleRate) + lastRadianAngle, g_tau);
+    
+    return lastRadianAngle;
 }
 
 /*
