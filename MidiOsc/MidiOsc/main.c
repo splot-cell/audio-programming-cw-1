@@ -28,7 +28,6 @@ int main(int argc, const char * argv[]) {
     printSamples(1, 249);
     printf("%.6f\n", sin(printSamples(1, 1020)));
     
-    
     return 0;
 }
 
