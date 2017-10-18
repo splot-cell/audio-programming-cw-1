@@ -117,13 +117,40 @@ void detectHelp(const char *arguments[]) {
 }
 
 void printHelp() {
-    char *helpText[] = {"This is the first line of the help text", "and this is the second."};
+    char *helpText[] = {
+        "This is the first line of the help text",
+        "and this is the second.",
+        "This is a much longer line to see if I got the maths right, I certainly ho"
+    };
     int numLines = sizeof(helpText) / sizeof(helpText[0]);
     printWithBorder(helpText, numLines);
+    exit(0);
 }
 
 void printWithBorder(char *message[], int rows) {
-    int numColumns = 80, pad = 1, numRows = rows; // Set up border parameters
+    int numColumns = 80, pad = 1, numRows = rows + 2 + (2*pad); // Set up border parameters
+    int r = 0, c = 0; // Set up indexes for rows and columns
     
-    
+    for(r = 0; r < numRows; ++r) {
+        for(c = 0; c < numColumns; ++c) {
+            if(r == 0 || r == numRows - 1 || c == 0 || c == numColumns - 1)
+                // If we're in the first or last row, or first or last column
+                printf("%c", '*');
+            else if(r <= pad || r >= numRows - 1 - pad || c <= pad || c >= numColumns - 1 - pad)
+                // If we're wthin the padding rows or columns
+                printf("%c", ' ');
+            else { // We're in the rows with text
+                int centreOffset = (int) ((numColumns - strlen(message[r-1-pad])) / 2) - pad -1;
+                    // Integer divide remainig whitespace by 2
+                if(c - 1 - pad < centreOffset)
+                    printf("%c", ' ');
+                else if(strlen(message[r-1-pad]) > c - centreOffset - 1 - pad)
+                    // Checking for out-of-bounds index
+                    printf("%c", message[r-1-pad][c - centreOffset - 1 - pad]);
+                else
+                    printf("%c", ' ');
+            }
+        }
+        printf("%c", '\n');
+    }
 }
