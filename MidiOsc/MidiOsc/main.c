@@ -37,6 +37,11 @@ void error(const char *message, int code);
 void detectHelp(const char *arguments[]);
 void printHelp();
 void printWithBorder(char *message[], int rows);
+    /*
+     *  Takes in array of strings. Each string is a line to be printed.
+     *
+     *
+     */
 
 // STRUCT
 struct Note {int duration; double frequency;};
@@ -138,32 +143,39 @@ void printHelp() {
 }
 
 void printWithBorder(char *message[], int rows) {
+    /* Set up border parameters */
     int pad = 1, borderWidth = 3, numColumns = 80, numRows = rows  + (2*(pad+borderWidth));
-        // Set up border parameters
-    int r = 0, c = 0;
-        // Set up indexes for rows and columns
     
-    for(r = 0; r < numRows; ++r) {
-        for(c = 0; c < numColumns; ++c) {
+    for(int r = 0; r < numRows; ++r) {
+        for(int c = 0; c < numColumns; ++c) {
+            /* If we're in the border rows or columns */
             if(r < borderWidth || r >= numRows - borderWidth ||
                c < borderWidth || c >= numColumns - borderWidth)
-                // If we're in the border rows or columns
                 printf("%c", '*');
+            
+            /* If we're wthin the padding rows or columns */
             else if(r < pad + borderWidth || r >= numRows - borderWidth - pad ||
                     c < pad + borderWidth || c >= numColumns - borderWidth - pad)
-                // If we're wthin the padding rows or columns
                 printf("%c", ' ');
-            else {  // We're in the rows and columns with potential text
+            
+            
+            else {
+                /* We must now be in the rows and columns with potential text */
+                
+                /* Integer divide remainig whitespace by 2 */
                 int centreOffset = (int) ((numColumns -
                                 strlen(message[r - borderWidth - pad])) / 2) - pad - borderWidth;
-                    // Integer divide remainig whitespace by 2
                 
+                /* Fill in whitespace before printing message */
                 if(c - borderWidth - pad < centreOffset)
                     printf("%c", ' ');
+                
+                /* Printing message */
                 else if(strlen(message[r-borderWidth-pad]) > c - centreOffset - borderWidth - pad)
-                    // Checking for out-of-bounds index
                     printf("%c", message[r-borderWidth-pad][c - centreOffset - borderWidth - pad]);
-                else // Fill in whitespace
+                
+                /* Finishing whitespace */
+                else
                     printf("%c", ' ');
             }
         }
