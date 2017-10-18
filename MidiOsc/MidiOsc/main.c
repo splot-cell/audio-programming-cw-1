@@ -14,48 +14,96 @@
 #include <stdlib.h>     // For exit().
 
 
-// GLOBAL VARIABLES
+/* GLOBAL VARIABLES */
 const int g_sampleRate = 48000;
 const double g_pi = 3.14159265359;
 const double g_tau = 2 * g_pi;
 const double g_referenceFrequency = 440; // Frequency of A above middle C.
 const double g_referenceMidiNote = 69; // Midi note num of A above middle C.
 
+/* STRUCTS */
+struct Note {int duration; double frequency;};
+
+/* ERROR MESSAGES */
+enum ERR {NO_ERR, BAD_COMMAND_LINE, BAD_RUNTIME_ARG};
+
 #ifndef TEST
-// FUNCTION PROTOTYPES
+/* FUNCTION PROTOTYPES */
 double midiToFrequency(const int midiNote);
 double printSamples(int duration, double frequency);
-    // Takes duration in miliseconds and required oscillator frequency.
-    // Returns angle in radians for calulating final sample.
+    /*  IIMPROVE THESE COMMENTS
+     *
+     *  Takes duration in miliseconds and required oscillator frequency.
+     *  Returns angle in radians for calulating final sample.
+     */
 double calculateAngle(unsigned int sampleIndex, double frequency, double lastRadianAngle);
     //
-bool isOnlyInt(const char *string);
-    // Given a string. Will return true if only ascii characters 0-9 are present, otherwise false.
+bool isOnlyInts(const char *string);
+    /*
+     *  Input a string from stdin.
+     *  Will check that only ascii characters '0'-'9', or ' ' are present.
+     *  Provides more robust checking of user input than just scanf or sscanf.
+     */
 bool withinDurationLimit(const long duration);
-    // Checks that duration will not cause overflow of sample index.
+    //  Checks that duration will not cause overflow of sample index.
 void error(const char *message, int code);
+    //  Helper function, prints error warning and exits program.
 void detectHelp(const char *arguments[]);
 void printHelp();
 void printWithBorder(char *message[], int rows);
     /*
-     *  Takes in array of strings. Each string is a line to be printed.
+     *  Prints message with a border.
      *
+     *  <message> is array of strings. Each string is a line to be printed.
+     *  <rows> parameter is total number of lines.
      *
+     *  Appearance can be set from within the funciton body.
+     *  If the a string input is too long for the row it will be cut short.
      */
 
-// STRUCT
-struct Note {int duration; double frequency;};
+
 
 int main(int argc, const char * argv[]) {
     if(argc == 2)
         detectHelp(argv);
     else if(argc > 2)
-        error("Maximum of one command line argument accepted.\n", 1);
+        error("Maximum of one runtime argument accepted.", BAD_COMMAND_LINE);
     
+    int numberLines = 100;
+    struct Note notes[numberLines];
+    char userInputBuffer[30] = {0};
+    
+    int previousTimestamp = 0;
+    for(int i = 0; i < numberLines; ++i) {
+        if(fgets(userInputBuffer, sizeof(userInputBuffer), stdin) == NULL)
+            error("User input not in a recognised format.", BAD_RUNTIME_ARG);
+        
+        if(!isOnlyInts(userInputBuffer))
+            error("User input not in a recognised format.", BAD_RUNTIME_ARG);
+        
+        int timestamp, noteNumber;
+        if(sscanf(userInputBuffer, "%d %d", &timestamp, &noteNumber) != 2)
+            error("User input not in a recognised format.", BAD_RUNTIME_ARG);
+        
+        if(i > 0)
+            notes[i-1].duration = timestamp - previousTimestamp;
+        previousTimestamp = timestamp;
+        
+        if(noteNumber > 127)
+            error("The MIDI ‘note on’ message contains data out of bounds.",
+                    BAD_RUNTIME_ARG);
+        if(noteNumber < 0)
+            
+            //Print the samples
+        
+        notes[i].frequency = midiToFrequency(noteNumber);
+        
+        
+    }
      
      
     
-    return 0;
+    return NO_ERR;
 }
 #else
 #include "../../UnitTests/test.h"
@@ -88,12 +136,12 @@ double calculateAngle(unsigned int sampleIndex, double frequency, double lastRad
  *  printed for each frequency.
 */
 
-bool isOnlyInt(const char *string) {
+bool isOnlyInts(const char *string) {
     if(!string)
         return false;
     bool returnValue = true;
     for(int index = 0; index < (strlen(string) / sizeof(char)) && returnValue; ++index) {
-        if(string[index] < 48 || 57 < string[index])
+        if((string[index] < 48 || 57 < string[index]) && string[index] != 32)
             returnValue = false;
     }
     return returnValue;
@@ -118,7 +166,8 @@ void error(const char *message, int code) {
 void detectHelp(const char *arguments[]) {
     if(strcmp(arguments[1], "-help") == 0)
         printHelp();
-    error("Format not recognised! Type \"-help\" for formatting specification.\n", 2);
+    error("Format not recognised! Type \"-help\" for formatting specification.",
+          BAD_COMMAND_LINE);
 }
 
 void printHelp() {
@@ -139,7 +188,7 @@ void printHelp() {
     };
     int numLines = sizeof(helpText) / sizeof(helpText[0]);
     printWithBorder(helpText, numLines);
-    exit(0);
+    exit(NO_ERR);
 }
 
 void printWithBorder(char *message[], int rows) {

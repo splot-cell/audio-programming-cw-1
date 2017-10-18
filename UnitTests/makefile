@@ -42,3 +42,5 @@ comp_main: main.cpp
 comp_test: tests.cpp $(CODEHEADER)
 	$(CXX) $(CXXFLAGS) -c tests.cpp -o tests.o
 	
+release: $(CODEFILE)
+	$(CC) $(CFLAGS) -o MidiOsc $(CODEFILE)

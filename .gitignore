@@ -4,3 +4,4 @@ MidiOsc/MidiOsc.xcodeproj/
 *.o
 *.dSYM/
 test
+MidiOsc
