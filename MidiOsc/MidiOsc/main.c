@@ -117,10 +117,20 @@ void detectHelp(const char *arguments[]) {
 }
 
 void printHelp() {
-    char *helpText[] = {
-        "This is the first line of the help text",
-        "and this is the second.",
-        "This is a much longer line to see if I got the maths right, I certainly ho"
+    char *helpText[] = {//----------------------------single line character limit---|
+        "OLLY'S WONDEROUS COURSEWORK SUBMISSION",
+        "-- Help Documentation --",
+        "",
+        "This program will print the samples of a sine wave as floating point numbers",
+        "to six decimal places. Simply enter two integers and watch it go! The format",
+        "required is:",
+        "",
+        "<duration> <midi note number>",
+        "",
+        "The program accepts up to 100 pairs of integers, so you can play fun tunes",
+        "such as the Family Guy theme song.",
+        "",
+        "Output will begin once the <midi note number> is set to a value less than 0."
     };
     int numLines = sizeof(helpText) / sizeof(helpText[0]);
     printWithBorder(helpText, numLines);
@@ -128,26 +138,32 @@ void printHelp() {
 }
 
 void printWithBorder(char *message[], int rows) {
-    int numColumns = 80, pad = 1, numRows = rows + 2 + (2*pad); // Set up border parameters
-    int r = 0, c = 0; // Set up indexes for rows and columns
+    int pad = 1, borderWidth = 1, numColumns = 80, numRows = rows + 2 + (2*pad);
+        // Set up border parameters
+    int r = 0, c = 0;
+        // Set up indexes for rows and columns
     
     for(r = 0; r < numRows; ++r) {
         for(c = 0; c < numColumns; ++c) {
-            if(r == 0 || r == numRows - 1 || c == 0 || c == numColumns - 1)
-                // If we're in the first or last row, or first or last column
+            if(r < borderWidth || r >= numRows - borderWidth ||
+               c < borderWidth || c >= numColumns - borderWidth)
+                // If we're in the border rows or columns
                 printf("%c", '*');
-            else if(r <= pad || r >= numRows - 1 - pad || c <= pad || c >= numColumns - 1 - pad)
+            else if(r < pad + borderWidth || r >= numRows - borderWidth - pad ||
+                    c < pad + borderWidth || c >= numColumns - borderWidth - pad)
                 // If we're wthin the padding rows or columns
                 printf("%c", ' ');
-            else { // We're in the rows with text
-                int centreOffset = (int) ((numColumns - strlen(message[r-1-pad])) / 2) - pad -1;
+            else {  // We're in the rows and columns with potential text
+                int centreOffset = (int) ((numColumns -
+                                strlen(message[r - borderWidth - pad])) / 2) - pad - borderWidth;
                     // Integer divide remainig whitespace by 2
-                if(c - 1 - pad < centreOffset)
+                
+                if(c - borderWidth - pad < centreOffset)
                     printf("%c", ' ');
-                else if(strlen(message[r-1-pad]) > c - centreOffset - 1 - pad)
+                else if(strlen(message[r-borderWidth-pad]) > c - centreOffset - borderWidth - pad)
                     // Checking for out-of-bounds index
-                    printf("%c", message[r-1-pad][c - centreOffset - 1 - pad]);
-                else
+                    printf("%c", message[r-borderWidth-pad][c - centreOffset - borderWidth - pad]);
+                else // Fill in whitespace
                     printf("%c", ' ');
             }
         }
