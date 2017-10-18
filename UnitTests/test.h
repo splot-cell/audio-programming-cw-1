@@ -8,5 +8,6 @@ double calculateAngle(unsigned int sampleIndex, double frequency, double lastRad
 bool isOnlyInt(const char *string);
 bool withinDurationLimit(const long duration);
 double midiToFrequency(const int midiNote);
+void error(const char *message, int code);
 
 #endif

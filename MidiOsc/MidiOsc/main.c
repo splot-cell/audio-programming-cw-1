@@ -9,8 +9,9 @@
 #include <stdio.h>      // For user inputs and printf.
 #include <math.h>       // For sin() and fmod().
 #include <stdbool.h>    // For booleans.
-#include <string.h>     // For strlen().
+#include <string.h>     // For strlen() and strcmp().
 #include <limits.h>     // For overflow checking.
+#include <stdlib.h>     // For exit().
 
 
 // GLOBAL VARIABLES
@@ -32,22 +33,22 @@ bool isOnlyInt(const char *string);
     // Given a string. Will return true if only ascii characters 0-9 are present, otherwise false.
 bool withinDurationLimit(const long duration);
     // Checks that duration will not cause overflow of sample index.
+void error(const char *message, int code);
+void detectHelp(const char *arguments[]);
+void printHelp();
+void printWithBorder(char *message[], int rows);
+
+// STRUCT
+struct Note {int duration; double frequency;};
 
 int main(int argc, const char * argv[]) {
+    if(argc == 2)
+        detectHelp(argv);
+    else if(argc > 2)
+        error("Maximum of one command line argument accepted.\n", 1);
     
-    /*  checkHelp()
-            print help, exit
-        getInputLine
-            correct num args?
-        is int?
-        is negative?
-            yes = printSamples
-            no = is less than 128?
-                yes = add to array
-        Loop
      
      
-    */
     
     return 0;
 }
@@ -76,10 +77,10 @@ double calculateAngle(unsigned int sampleIndex, double frequency, double lastRad
 }
 
 /*
-    In order to avoid phase issues, must print last sample of previous frequency at beginning of
-    next frequency. This means that there will be one un-printed sample after the last frequency has
-    'finished' printing. This must then be printed to ensure the correct number of samples are
-    printed for each frequency.
+ *  In order to avoid phase issues, must print last sample of previous frequency at beginning of
+ *  next frequency. This means that there will be one un-printed sample after the last frequency has
+ *  'finished' printing. This must then be printed to ensure the correct number of samples are
+ *  printed for each frequency.
 */
 
 bool isOnlyInt(const char *string) {
@@ -102,4 +103,27 @@ bool withinDurationLimit(const long duration) {
 
 double midiToFrequency(const int midiNote) {
     return pow(2, (midiNote - g_referenceMidiNote)/12.) * g_referenceFrequency;
+}
+
+void error(const char *message, int code) {
+    printf("%s\n", message);
+    exit(code);
+}
+
+void detectHelp(const char *arguments[]) {
+    if(strcmp(arguments[1], "-help") == 0)
+        printHelp();
+    error("Format not recognised! Type \"-help\" for formatting specification.\n", 2);
+}
+
+void printHelp() {
+    char *helpText[] = {"This is the first line of the help text", "and this is the second."};
+    int numLines = sizeof(helpText) / sizeof(helpText[0]);
+    printWithBorder(helpText, numLines);
+}
+
+void printWithBorder(char *message[], int rows) {
+    int numColumns = 80, pad = 1, numRows = rows; // Set up border parameters
+    
+    
 }

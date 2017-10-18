@@ -1,4 +1,5 @@
 #include "CppUTest/TestHarness.h"
+#include "CppUTestExt/MockSupport.h"
 extern "C" {
 #include "test.h"
 #include <stdbool.h>
@@ -8,6 +9,7 @@ TEST_GROUP(Samples) {};
 TEST_GROUP(StringTesting) {};
 TEST_GROUP(DurationTests) {};
 TEST_GROUP(MidiTests) {};
+TEST_GROUP(HelperTests) {};
 
 TEST(Samples, initialSampleAccurate) {
    double result = calculateAngle(0, 1376.42, 0);
