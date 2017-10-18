@@ -138,7 +138,7 @@ void printHelp() {
 }
 
 void printWithBorder(char *message[], int rows) {
-    int pad = 1, borderWidth = 1, numColumns = 80, numRows = rows + 2 + (2*pad);
+    int pad = 1, borderWidth = 3, numColumns = 80, numRows = rows  + (2*(pad+borderWidth));
         // Set up border parameters
     int r = 0, c = 0;
         // Set up indexes for rows and columns
