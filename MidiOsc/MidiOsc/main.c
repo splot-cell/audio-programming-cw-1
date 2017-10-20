@@ -9,7 +9,7 @@
 #include <stdio.h>      // For user inputs and printf.
 #include <math.h>       // For sin() and fmod().
 #include <stdbool.h>    // For booleans.
-#include <string.h>     // For strlen() and strcmp().
+#include <string.h>     // For strlen(), strcmp(), strtok().
 #include <limits.h>     // For overflow checking.
 #include <stdlib.h>     // For exit().
 
@@ -35,7 +35,7 @@ enum ERR {NO_ERR, BAD_COMMAND_LINE, BAD_RUNTIME_ARG, OUT_OF_BOUNDS_VALUE};
 void commandLineArgHandler(int argc, const char *argv[]);
 void detectHelp(const char *arguments[]);
 void sendHelp();
-void printWithBorder(char *message[], int rows);
+void printWithBorder(char *message[], int rows, int borderWidth);
 /*
  *  Prints message with a border.
  *
@@ -104,23 +104,27 @@ void detectHelp(const char *arguments[]) {
 }
 
 void sendHelp() {
-    char *helpText[] = {//----------------------------single line character limit---|
+    char *helpTitle[] = {
         "OLLY'S WONDEROUS COURSEWORK SUBMISSION",
-        "-- Help Documentation --",
-        "",
+        "-- Help Documentation --"
+    };
+    printWithBorder(helpTitle, sizeof(helpTitle) / sizeof(helpTitle[0]), 3);
+    char *helpText[] = {//----------------------------single line character limit---|
         "This program will print the samples of a sine wave as floating point numbers",
         "to six decimal places. Simply enter two integers and watch it go! The format",
         "required is:",
         "",
         "<duration> <midi note number>",
         "",
+        "NOTE: any additional whitespace will be picked up during error checking. And",
+        "will not be tollerated",
+        "",
         "The program accepts up to 100 pairs of integers, so you can play fun tunes",
         "such as the Family Guy theme song.",
         "",
         "Output will begin once the <midi note number> is set to a value less than 0."
     };
-    int numLines = sizeof(helpText) / sizeof(helpText[0]);
-    printWithBorder(helpText, numLines);
+    printWithBorder(helpText, sizeof(helpText) / sizeof(helpText[0]),1);
     return;
 }
 
@@ -134,8 +138,7 @@ void populateNotes(struct Note *notes, int numberOfLines) {
         
         writeNoteData(notes, noteIndex, tempTimeStamp, tempMidiNote);
         
-        ++noteIndex;
-    } while(notes[noteIndex].midiNote >= 0 && noteIndex < numberOfLines);
+    } while(notes[noteIndex++].midiNote >= 0 && noteIndex < numberOfLines);
     notes[numberOfLines - 1].midiNote = -1; // Ensures 100th midiNote will end printing loop
 }
 
@@ -147,7 +150,8 @@ bool validateUserInput(char *userInputBuffer, int *timeStamp, int *midiNote) {
     tempNote = strtok(NULL, tokenSeparater);
     if(tempTime == NULL || tempNote == NULL)
         return false;
-    if(!(isOnlyInt(tempTime) || isOnlyInt(tempNote)))
+    // Parse for \n character
+    if(!isOnlyInt(tempTime) || !isOnlyInt(tempNote))
         return false;
     *timeStamp = atoi(tempTime);
     *midiNote = atoi(tempNote);
@@ -222,11 +226,12 @@ double calculateAngle(unsigned int sampleIndex, double frequency, double lastRad
 bool isOnlyInt(const char *string) {
     if(!string)
         return false;
+    bool retValue = true;
     for(int index = 0; index < (strlen(string) / sizeof(char)); ++index) {
-        if(string[index] < 48 || 57 < string[index])
-            return true;
+        if((string[index] < 48 || 57 < string[index]) && retValue)
+            retValue = false;
     }
-    return false;
+    return retValue;
 }
 
 bool withinDurationLimit(const long duration) {
@@ -245,9 +250,9 @@ void error(const char *message, int code) {
     exit(code);
 }
 
-void printWithBorder(char *message[], int rows) {
+void printWithBorder(char *message[], int rows, int borderWidth) {
     /* Set up border parameters */
-    int pad = 1, borderWidth = 1, numColumns = 80, numRows = rows  + (2*(pad+borderWidth));
+    int pad = 1, numColumns = 80, numRows = rows  + (2*(pad+borderWidth));
     
     for(int r = 0; r < numRows; ++r) {
         for(int c = 0; c < numColumns; ++c) {

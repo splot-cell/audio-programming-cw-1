@@ -22,55 +22,55 @@ TEST(Samples, secondSampleAccurate) {
 
 TEST(StringTesting, isOnlyInt_identifiesZero) {
 	const char *input = "0";
-	bool result = isOnlyInts(input);
+	bool result = isOnlyInt(input);
 	CHECK(result);
 }
 
 TEST(StringTesting, isOnlyInt_identifies9) {
 	const char *input = "9";
-	bool result = isOnlyInts(input);
+	bool result = isOnlyInt(input);
 	CHECK(result);
 }
 
 TEST(StringTesting, isOnlyInt_identifiesColon) {
 	const char *input = ":";
-	bool result = isOnlyInts(input);
+	bool result = isOnlyInt(input);
 	CHECK(!result);
 }
 
 TEST(StringTesting, isOnlyInt_identifiesSlash) {
 	const char *input = "/";
-	bool result = isOnlyInts(input);
+	bool result = isOnlyInt(input);
 	CHECK(!result);
 }
 
 TEST(StringTesting, isOnlyInt_iteratesStringFalse) {
 	const char *input = "0123456789p";
-	bool result = isOnlyInts(input);
+	bool result = isOnlyInt(input);
 	CHECK(!result);
 }
 
 TEST(StringTesting, isOnlyInt_iteratesStringTrue) {
 	const char *input = "0123456789";
-	bool result = isOnlyInts(input);
+	bool result = isOnlyInt(input);
 	CHECK(result);
 }
 
 TEST(StringTesting, isOnlyInt_identifiesSpace) {
 	const char *input = "01234 56789";
-	bool result = isOnlyInts(input);
-	CHECK(result);
+	bool result = isOnlyInt(input);
+	CHECK(!result);
 }
 
 TEST(StringTesting, isOnlyInt_identifiesNULL) {
 	const char *input = "01234\056789";
-	bool result = isOnlyInts(input);
+	bool result = isOnlyInt(input);
 	CHECK(!result);
 }
 
 TEST(StringTesting, isOnlyInt_identifiesOnlyNULL) {
 	const char *input = NULL;
-	bool result = isOnlyInts(input);
+	bool result = isOnlyInt(input);
 	CHECK(!result);
 }
 
