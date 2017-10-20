@@ -137,20 +137,12 @@ void populateNotes(struct Note *notes, int numberOfLines) {
         
         writeNoteData(notes, noteIndex, tempTimeStamp, tempMidiNote);
         
-    } while(notes[noteIndex].midiNote >= 0);
+        ++noteIndex;
+    } while(notes[noteIndex].midiNote >= 0 && noteIndex < numberOfLines);
     
     
-        error("User input not in a recognised format.", BAD_RUNTIME_ARG);
+    //Print the samples
     
-    if(i > 0)
-        notes[i-1].duration = timestamp - previousTimestamp;
-    previousTimestamp = timestamp;
-    
-    if(noteNumber < 0)
-        
-        //Print the samples
-        
-        notes[i].midiNoteNumber = noteNumber;
 }
 
 bool validateUserInput(char *userInputBuffer, int *timeStamp, int *midiNote) {
