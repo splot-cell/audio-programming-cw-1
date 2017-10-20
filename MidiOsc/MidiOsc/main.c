@@ -75,12 +75,11 @@ int main(int argc, const char * argv[]) {
     
     int numberOfLines = 100;
     struct Note notes[numberOfLines];
+    
     populateNotes(notes, numberOfLines);
     
-    // Incorporate strtok()
-    // Check whether first note is <0
+    printNotes(notes);
     
-
     return NO_ERR;
 }
 #else
@@ -138,11 +137,6 @@ void populateNotes(struct Note *notes, int numberOfLines) {
         ++noteIndex;
     } while(notes[noteIndex].midiNote >= 0 && noteIndex < numberOfLines);
     notes[numberOfLines - 1].midiNote = -1; // Ensures 100th midiNote will end printing loop
-    
-    printNotes(notes);
-    
-    //Print the samples
-    
 }
 
 bool validateUserInput(char *userInputBuffer, int *timeStamp, int *midiNote) {
