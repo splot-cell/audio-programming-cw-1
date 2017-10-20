@@ -25,8 +25,6 @@ const double g_referenceMidiNote = 69; // Midi note num of A above middle C.
 struct Note {
     int duration;
     int midiNote;
-    double frequency;
-    double startingPhase;
 };
 
 /* ERROR MESSAGES */
@@ -52,6 +50,7 @@ bool validateUserInput(char *userInputBuffer, int *timeStamp, int *midiNote);
 void writeNoteData(struct Note *notes, int noteIndex, int timeStamp, int midiNote);
 void timestampToDurationHandler(struct Note *notes, int noteIndex, int timeStamp);
 double midiToFrequency(const int midiNote);
+void printNotes(struct Note *notes);
 double printNote(struct Note note);
     /*  IIMPROVE THESE COMMENTS
      *
@@ -138,7 +137,9 @@ void populateNotes(struct Note *notes, int numberOfLines) {
         
         ++noteIndex;
     } while(notes[noteIndex].midiNote >= 0 && noteIndex < numberOfLines);
+    notes[numberOfLines - 1].midiNote = -1; // Ensures 100th midiNote will end printing loop
     
+    printNotes(notes);
     
     //Print the samples
     
@@ -168,7 +169,7 @@ void writeNoteData(struct Note *notes, int noteIndex, int timeStamp, int midiNot
     
     timestampToDurationHandler(notes, noteIndex, timeStamp);
     
-    notes[noteIndex].frequency = midiToFrequency(midiNote);
+    notes[noteIndex].midiNote = midiNote;
 }
 
 void timestampToDurationHandler(struct Note *notes, int noteIndex, int timeStamp) {
@@ -187,9 +188,17 @@ void timestampToDurationHandler(struct Note *notes, int noteIndex, int timeStamp
 
 void printNotes(struct Note *notes) {
     int noteIndex = 0;
+    double lastSample = 0;
     while(notes[noteIndex].midiNote >= 0) {
-        printNote(notes[noteIndex]);
+        lastSample = printNote(notes[noteIndex]);
     }
+    printf("%.6f\n", sin(lastSample));
+    /*
+     *  In order to avoid phase issues, must print last sample of previous frequency at beginning of
+     *  next frequency. This means that there will be one un-printed sample after the last frequency
+     *  has 'finished' printing. This must then be printed to ensure the correct number of samples
+     *  are printed for each frequency.
+     */
     return;
 }
 
@@ -197,16 +206,17 @@ double printNote(struct Note note) {
     
     static double lastRadianAngle = 0;
         // Angle is stored between function calls.
+    double frequency = midiToFrequency(note.midiNote);
     
     for(unsigned int sampleIndex = 0;
         sampleIndex < note.duration * g_sampleRate / 1000; ++sampleIndex) {
-        printf("%.6f\n", sin(calculateAngle(sampleIndex, note.frequency, lastRadianAngle)));
+        printf("%.6f\n", sin(calculateAngle(sampleIndex, frequency, lastRadianAngle)));
     }
     
     // Store the radian value used to calulate NEXT sample as this will be the starting sample of
     // the next oscillation.
-    lastRadianAngle = calculateAngle(note.duration * note.frequency / g_sampleRate,
-                                     note.frequency, lastRadianAngle);
+    lastRadianAngle = calculateAngle(note.duration * frequency / g_sampleRate,
+                                     frequency, lastRadianAngle);
     return lastRadianAngle;
 }
 
@@ -214,12 +224,6 @@ double calculateAngle(unsigned int sampleIndex, double frequency, double lastRad
     return fmod((g_tau * frequency * sampleIndex / g_sampleRate) + lastRadianAngle, g_tau);
 }
 
-/*
- *  In order to avoid phase issues, must print last sample of previous frequency at beginning of
- *  next frequency. This means that there will be one un-printed sample after the last frequency has
- *  'finished' printing. This must then be printed to ensure the correct number of samples are
- *  printed for each frequency.
-*/
 
 bool isOnlyInt(const char *string) {
     if(!string)
