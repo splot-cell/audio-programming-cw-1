@@ -51,9 +51,8 @@ void populateNotes(struct Note *notes, int numberOfLines);
 bool validateUserInput(char *userInputBuffer, int *timeStamp, int *midiNote);
 void writeNoteData(struct Note *notes, int noteIndex, int timeStamp, int midiNote);
 void timestampToDurationHandler(struct Note *notes, int noteIndex, int timeStamp);
-bool validateMidiNotes();
 double midiToFrequency(const int midiNote);
-double printSamples(int duration, double frequency);
+double printNote(struct Note note);
     /*  IIMPROVE THESE COMMENTS
      *
      *  Takes duration in miliseconds and required oscillator frequency.
@@ -186,19 +185,28 @@ void timestampToDurationHandler(struct Note *notes, int noteIndex, int timeStamp
     return;
 }
 
-double printSamples(int duration, double frequency) {
+void printNotes(struct Note *notes) {
+    int noteIndex = 0;
+    while(notes[noteIndex].midiNote >= 0) {
+        printNote(notes[noteIndex]);
+    }
+    return;
+}
+
+double printNote(struct Note note) {
     
     static double lastRadianAngle = 0;
         // Angle is stored between function calls.
     
-    for(unsigned int sampleIndex = 0; sampleIndex < duration * g_sampleRate / 1000; ++sampleIndex) {
-        printf("%.6f\n", sin(calculateAngle(sampleIndex, frequency, lastRadianAngle)));
+    for(unsigned int sampleIndex = 0;
+        sampleIndex < note.duration * g_sampleRate / 1000; ++sampleIndex) {
+        printf("%.6f\n", sin(calculateAngle(sampleIndex, note.frequency, lastRadianAngle)));
     }
     
     // Store the radian value used to calulate NEXT sample as this will be the starting sample of
     // the next oscillation.
-    lastRadianAngle = calculateAngle(duration * frequency / g_sampleRate,
-                                     frequency, lastRadianAngle);
+    lastRadianAngle = calculateAngle(note.duration * note.frequency / g_sampleRate,
+                                     note.frequency, lastRadianAngle);
     return lastRadianAngle;
 }
 
