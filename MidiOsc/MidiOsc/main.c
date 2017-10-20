@@ -30,7 +30,7 @@ struct Note {
 };
 
 /* ERROR MESSAGES */
-enum ERR {NO_ERR, BAD_COMMAND_LINE, BAD_RUNTIME_ARG};
+enum ERR {NO_ERR, BAD_COMMAND_LINE, BAD_RUNTIME_ARG, OUT_OF_BOUNDS_VALUE};
 
 #ifndef TEST
 /* FUNCTION PROTOTYPES */
@@ -49,8 +49,8 @@ void printWithBorder(char *message[], int rows);
  */
 void populateNotes(struct Note *notes, int numberOfLines);
 bool validateUserInput(char *userInputBuffer, int *timeStamp, int *midiNote);
-void writeNoteData(struct Note note, int timeStamp, int midiNote);
-void timestampToDurationHandler(struct Note note, int timeStamp);
+void writeNoteData(struct Note *notes, int noteIndex, int timeStamp, int midiNote);
+void timestampToDurationHandler(struct Note *notes, int noteIndex, int timeStamp);
 bool validateMidiNotes();
 double midiToFrequency(const int midiNote);
 double printSamples(int duration, double frequency);
@@ -135,7 +135,7 @@ void populateNotes(struct Note *notes, int numberOfLines) {
         if(!validateUserInput(userInputBuffer, &tempTimeStamp, &tempMidiNote))
             error("User input not in a recognised format.", BAD_RUNTIME_ARG);
         
-        writeNoteData(notes[noteIndex], tempTimeStamp, tempMidiNote);
+        writeNoteData(notes, noteIndex, tempTimeStamp, tempMidiNote);
         
     } while(notes[noteIndex].midiNote >= 0);
     
@@ -169,15 +169,29 @@ bool validateUserInput(char *userInputBuffer, int *timeStamp, int *midiNote) {
     return true;
 }
 
-void writeNoteData(struct Note note, int timeStamp, int midiNote) {
-    if(midiNote > 127)
+void writeNoteData(struct Note *notes, int noteIndex, int timeStamp, int midiNote) {
+    if(midiNote > 127) {
         error("The MIDI ‘note on’ message contains data out of bounds.",
-              BAD_RUNTIME_ARG);
+              OUT_OF_BOUNDS_VALUE);
+    }
     
-    timestampToDurationHandler(note, timeStamp);
+    timestampToDurationHandler(notes, noteIndex, timeStamp);
     
-    notes.midiNote = midiNote;
+    notes[noteIndex].frequency = midiToFrequency(midiNote);
+}
+
+void timestampToDurationHandler(struct Note *notes, int noteIndex, int timeStamp) {
+    if(noteIndex < 1)
+        return;
+    static int previousTimestamp = 0;
+    if(timeStamp - previousTimestamp <= 0) {
+        error("The time values need to be non-negative and increasing in value.",
+            OUT_OF_BOUNDS_VALUE);
+    }
     
+    notes[noteIndex - 1].duration = timeStamp - previousTimestamp;
+    previousTimestamp = timeStamp;
+    return;
 }
 
 double printSamples(int duration, double frequency) {
@@ -272,4 +286,5 @@ void printWithBorder(char *message[], int rows) {
         }
         printf("%c", '\n');
     }
+    return;
 }
