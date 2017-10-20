@@ -22,13 +22,36 @@ const double g_referenceFrequency = 440; // Frequency of A above middle C.
 const double g_referenceMidiNote = 69; // Midi note num of A above middle C.
 
 /* STRUCTS */
-struct Note {int duration; double frequency;};
+struct Note {
+    int duration;
+    int midiNote;
+    double frequency;
+    double startingPhase;
+};
 
 /* ERROR MESSAGES */
 enum ERR {NO_ERR, BAD_COMMAND_LINE, BAD_RUNTIME_ARG};
 
 #ifndef TEST
 /* FUNCTION PROTOTYPES */
+void commandLineArgHandler(int argc, const char *argv[]);
+void detectHelp(const char *arguments[]);
+void sendHelp();
+void printWithBorder(char *message[], int rows);
+/*
+ *  Prints message with a border.
+ *
+ *  <message> is array of strings. Each string is a line to be printed.
+ *  <rows> parameter is total number of lines.
+ *
+ *  Appearance can be set from within the funciton body.
+ *  If the a string input is too long for the row it will be cut short.
+ */
+void populateNotes(struct Note *notes, int numberOfLines);
+bool validateUserInput(char *userInputBuffer, int *timeStamp, int *midiNote);
+void writeNoteData(struct Note note, int timeStamp, int midiNote);
+void timestampToDurationHandler(struct Note note, int timeStamp);
+bool validateMidiNotes();
 double midiToFrequency(const int midiNote);
 double printSamples(int duration, double frequency);
     /*  IIMPROVE THESE COMMENTS
@@ -38,76 +61,124 @@ double printSamples(int duration, double frequency);
      */
 double calculateAngle(unsigned int sampleIndex, double frequency, double lastRadianAngle);
     //
-bool isOnlyInts(const char *string);
+bool isOnlyInt(const char *string);
     /*
      *  Input a string from stdin.
-     *  Will check that only ascii characters '0'-'9', or ' ' are present.
+     *  Will check that only ascii characters '0'-'9' are present.
      *  Provides more robust checking of user input than just scanf or sscanf.
      */
 bool withinDurationLimit(const long duration);
     //  Checks that duration will not cause overflow of sample index.
 void error(const char *message, int code);
     //  Helper function, prints error warning and exits program.
-void detectHelp(const char *arguments[]);
-void printHelp();
-void printWithBorder(char *message[], int rows);
-    /*
-     *  Prints message with a border.
-     *
-     *  <message> is array of strings. Each string is a line to be printed.
-     *  <rows> parameter is total number of lines.
-     *
-     *  Appearance can be set from within the funciton body.
-     *  If the a string input is too long for the row it will be cut short.
-     */
-
-
 
 int main(int argc, const char * argv[]) {
-    if(argc == 2)
-        detectHelp(argv);
-    else if(argc > 2)
-        error("Maximum of one runtime argument accepted.", BAD_COMMAND_LINE);
+    commandLineArgHandler(argc, argv);
     
-    int numberLines = 100;
-    struct Note notes[numberLines];
-    char userInputBuffer[30] = {0};
+    int numberOfLines = 100;
+    struct Note notes[numberOfLines];
+    populateNotes(notes, numberOfLines);
     
-    int previousTimestamp = 0;
-    for(int i = 0; i < numberLines; ++i) {
-        if(fgets(userInputBuffer, sizeof(userInputBuffer), stdin) == NULL)
-            error("User input not in a recognised format.", BAD_RUNTIME_ARG);
-        
-        if(!isOnlyInts(userInputBuffer))
-            error("User input not in a recognised format.", BAD_RUNTIME_ARG);
-        
-        int timestamp, noteNumber;
-        if(sscanf(userInputBuffer, "%d %d", &timestamp, &noteNumber) != 2)
-            error("User input not in a recognised format.", BAD_RUNTIME_ARG);
-        
-        if(i > 0)
-            notes[i-1].duration = timestamp - previousTimestamp;
-        previousTimestamp = timestamp;
-        
-        if(noteNumber > 127)
-            error("The MIDI ‘note on’ message contains data out of bounds.",
-                    BAD_RUNTIME_ARG);
-        if(noteNumber < 0)
-            
-            //Print the samples
-        
-        notes[i].frequency = midiToFrequency(noteNumber);
-        
-        
-    }
-     
-     
+    // Incorporate strtok()
+    // Check whether first note is <0
     
+
     return NO_ERR;
 }
 #else
 #include "../../UnitTests/test.h"
 #endif
+
+void commandLineArgHandler(int argc, const char *argv[]) {
+    if(argc > 2)
+        error("Maximum of one runtime argument accepted.", BAD_COMMAND_LINE);
+    else if(argc == 2)
+        detectHelp(argv);
+    return;
+}
+
+void detectHelp(const char *arguments[]) {
+    if(strcmp(arguments[1], "-help") == 0) {
+        sendHelp();
+        exit(NO_ERR);
+    }
+    error("Format not recognised! Type \"-help\" for formatting specification.",
+          BAD_COMMAND_LINE);
+}
+
+void sendHelp() {
+    char *helpText[] = {//----------------------------single line character limit---|
+        "OLLY'S WONDEROUS COURSEWORK SUBMISSION",
+        "-- Help Documentation --",
+        "",
+        "This program will print the samples of a sine wave as floating point numbers",
+        "to six decimal places. Simply enter two integers and watch it go! The format",
+        "required is:",
+        "",
+        "<duration> <midi note number>",
+        "",
+        "The program accepts up to 100 pairs of integers, so you can play fun tunes",
+        "such as the Family Guy theme song.",
+        "",
+        "Output will begin once the <midi note number> is set to a value less than 0."
+    };
+    int numLines = sizeof(helpText) / sizeof(helpText[0]);
+    printWithBorder(helpText, numLines);
+    return;
+}
+
+void populateNotes(struct Note *notes, int numberOfLines) {
+    char userInputBuffer[30] = {0};
+    int noteIndex = 0, tempTimeStamp = 0, tempMidiNote = 0;
+    
+    do {
+        if(!validateUserInput(userInputBuffer, &tempTimeStamp, &tempMidiNote))
+            error("User input not in a recognised format.", BAD_RUNTIME_ARG);
+        
+        writeNoteData(notes[noteIndex], tempTimeStamp, tempMidiNote);
+        
+    } while(notes[noteIndex].midiNote >= 0);
+    
+    
+        error("User input not in a recognised format.", BAD_RUNTIME_ARG);
+    
+    if(i > 0)
+        notes[i-1].duration = timestamp - previousTimestamp;
+    previousTimestamp = timestamp;
+    
+    if(noteNumber < 0)
+        
+        //Print the samples
+        
+        notes[i].midiNoteNumber = noteNumber;
+}
+
+bool validateUserInput(char *userInputBuffer, int *timeStamp, int *midiNote) {
+    if(fgets(userInputBuffer, sizeof(userInputBuffer), stdin) == NULL)
+        return false;
+    char *tokenSeparater = " ", *tempTime = NULL, *tempNote = NULL;
+    tempTime = strtok(userInputBuffer, tokenSeparater);
+    tempNote = strtok(NULL, tokenSeparater);
+    if(tempTime == NULL || tempNote == NULL)
+        return false;
+    if(!(isOnlyInt(tempTime) || isOnlyInt(tempNote)))
+        return false;
+    *timeStamp = atoi(tempTime);
+    *midiNote = atoi(tempNote);
+    //sscanf(userInputBuffer, "%d %d", timeStamp, midiNote);
+    return true;
+}
+
+void writeNoteData(struct Note note, int timeStamp, int midiNote) {
+    if(midiNote > 127)
+        error("The MIDI ‘note on’ message contains data out of bounds.",
+              BAD_RUNTIME_ARG);
+    
+    timestampToDurationHandler(note, timeStamp);
+    
+    notes.midiNote = midiNote;
+    
+}
 
 double printSamples(int duration, double frequency) {
     
@@ -136,15 +207,14 @@ double calculateAngle(unsigned int sampleIndex, double frequency, double lastRad
  *  printed for each frequency.
 */
 
-bool isOnlyInts(const char *string) {
+bool isOnlyInt(const char *string) {
     if(!string)
         return false;
-    bool returnValue = true;
-    for(int index = 0; index < (strlen(string) / sizeof(char)) && returnValue; ++index) {
-        if((string[index] < 48 || 57 < string[index]) && string[index] != 32)
-            returnValue = false;
+    for(int index = 0; index < (strlen(string) / sizeof(char)); ++index) {
+        if(string[index] < 48 || 57 < string[index])
+            return true;
     }
-    return returnValue;
+    return false;
 }
 
 bool withinDurationLimit(const long duration) {
@@ -163,37 +233,9 @@ void error(const char *message, int code) {
     exit(code);
 }
 
-void detectHelp(const char *arguments[]) {
-    if(strcmp(arguments[1], "-help") == 0)
-        printHelp();
-    error("Format not recognised! Type \"-help\" for formatting specification.",
-          BAD_COMMAND_LINE);
-}
-
-void printHelp() {
-    char *helpText[] = {//----------------------------single line character limit---|
-        "OLLY'S WONDEROUS COURSEWORK SUBMISSION",
-        "-- Help Documentation --",
-        "",
-        "This program will print the samples of a sine wave as floating point numbers",
-        "to six decimal places. Simply enter two integers and watch it go! The format",
-        "required is:",
-        "",
-        "<duration> <midi note number>",
-        "",
-        "The program accepts up to 100 pairs of integers, so you can play fun tunes",
-        "such as the Family Guy theme song.",
-        "",
-        "Output will begin once the <midi note number> is set to a value less than 0."
-    };
-    int numLines = sizeof(helpText) / sizeof(helpText[0]);
-    printWithBorder(helpText, numLines);
-    exit(NO_ERR);
-}
-
 void printWithBorder(char *message[], int rows) {
     /* Set up border parameters */
-    int pad = 1, borderWidth = 3, numColumns = 80, numRows = rows  + (2*(pad+borderWidth));
+    int pad = 1, borderWidth = 1, numColumns = 80, numRows = rows  + (2*(pad+borderWidth));
     
     for(int r = 0; r < numRows; ++r) {
         for(int c = 0; c < numColumns; ++c) {
