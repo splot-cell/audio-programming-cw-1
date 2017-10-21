@@ -46,7 +46,10 @@ void printWithBorder(char *message[], int rows, int borderWidth);
  *  If the a string input is too long for the row it will be cut short.
  */
 void populateNotes(struct Note *notes, int numberOfLines);
-bool validateUserInput(char *userInputBuffer, int *timeStamp, int *midiNote);
+bool validateUserInput(char *userInputBuffer, const int inputBufferSize, int *timeStamp,
+                       int *midiNote);
+void parseNewline(char *userInputBuffer);
+void flushStdin();
 void writeNoteData(struct Note *notes, int noteIndex, int timeStamp, int midiNote);
 void timestampToDurationHandler(struct Note *notes, int noteIndex, int timeStamp);
 double midiToFrequency(const int midiNote);
@@ -116,8 +119,9 @@ void sendHelp() {
         "",
         "<duration> <midi note number>",
         "",
-        "NOTE: any additional whitespace will be picked up during error checking. And",
-        "will not be tollerated",
+        "The program will read up to 30 characters on each line, and will ignore any",
+        "extra whitespace. If more than 30 characters are entered, the additional",
+        "ones will be discarded!",
         "",
         "The program accepts up to 100 pairs of integers, so you can play fun tunes",
         "such as the Family Guy theme song.",
@@ -129,11 +133,12 @@ void sendHelp() {
 }
 
 void populateNotes(struct Note *notes, int numberOfLines) {
-    char userInputBuffer[30] = {0};
+    const int inputBufferSize = 31;
+    char userInputBuffer[inputBufferSize] = {0};
     int noteIndex = 0, tempTimeStamp = 0, tempMidiNote = 0;
     
     do {
-        if(!validateUserInput(userInputBuffer, &tempTimeStamp, &tempMidiNote))
+        if(!validateUserInput(userInputBuffer, inputBufferSize, &tempTimeStamp, &tempMidiNote))
             error("User input not in a recognised format.", BAD_RUNTIME_ARG);
         
         writeNoteData(notes, noteIndex, tempTimeStamp, tempMidiNote);
@@ -142,21 +147,38 @@ void populateNotes(struct Note *notes, int numberOfLines) {
     notes[numberOfLines - 1].midiNote = -1; // Ensures 100th midiNote will end printing loop
 }
 
-bool validateUserInput(char *userInputBuffer, int *timeStamp, int *midiNote) {
-    if(fgets(userInputBuffer, sizeof(userInputBuffer), stdin) == NULL)
+bool validateUserInput(char *userInputBuffer, const int inputBufferSize, int *timeStamp,
+                       int *midiNote) {
+    if(fgets(userInputBuffer, inputBufferSize, stdin) == NULL)
         return false;
-    char *tokenSeparater = " ", *tempTime = NULL, *tempNote = NULL;
-    tempTime = strtok(userInputBuffer, tokenSeparater);
-    tempNote = strtok(NULL, tokenSeparater);
+    parseNewline(userInputBuffer);
+    
+    char *tempTime = NULL, *tempNote = NULL;
+    tempTime = strtok(userInputBuffer, " \t");
+    tempNote = strtok(NULL, " \t");
     if(tempTime == NULL || tempNote == NULL)
         return false;
-    // Parse for \n character
-    if(!isOnlyInt(tempTime) || !isOnlyInt(tempNote)) // Should be able to combine into one statement using brackets but test carefully
+    if(!isOnlyInt(tempTime) || !isOnlyInt(tempNote))
         return false;
     *timeStamp = atoi(tempTime);
     *midiNote = atoi(tempNote);
     //sscanf(userInputBuffer, "%d %d", timeStamp, midiNote);
     return true;
+}
+
+void parseNewline(char *userInputBuffer) {
+    char *p;
+    if((p = strchr(userInputBuffer, '\n'))) /* Extra parenthesis required as assignment */
+        *p = 0;
+    else /* User has entered more than 30 characters */
+        flushStdin();
+    return;
+}
+
+void flushStdin() {
+    scanf("%*[^\n]");   /* Scan and discard up to next newline character */
+    scanf("%*c");       /* Discard next character (the newline) */
+    return;
 }
 
 void writeNoteData(struct Note *notes, int noteIndex, int timeStamp, int midiNote) {
