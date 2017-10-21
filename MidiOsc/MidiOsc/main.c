@@ -13,7 +13,9 @@
 #include <limits.h>     // For overflow checking.
 #include <stdlib.h>     // For exit().
 
-
+#ifdef TEST
+#include "../../UnitTests/test.h"
+#else
 /* GLOBAL VARIABLES */
 const int g_sampleRate = 48000;
 const double g_pi = 3.14159265359;
@@ -30,7 +32,6 @@ struct Note {
 /* ERROR MESSAGES */
 enum ERR {NO_ERR, BAD_COMMAND_LINE, BAD_RUNTIME_ARG, OUT_OF_BOUNDS_VALUE};
 
-#ifndef TEST
 /* FUNCTION PROTOTYPES */
 void commandLineArgHandler(int argc, const char *argv[]);
 void detectHelp(const char *arguments[]);
@@ -64,8 +65,9 @@ double calculateAngle(unsigned int sampleIndex, double frequency, double lastRad
     //
 bool isOnlyInt(const char *string);
     /*
-     *  Input a string from stdin.
-     *  Will check that only ascii characters '0'-'9' are present.
+     *  Input a string from stdin. Each character checked in turn.
+     *  First character can be '-' or a numerical digit ('0'-'9'). Subsequent characters can only
+     *  be numerical digits.
      *  Provides more robust checking of user input than just scanf or sscanf.
      */
 bool withinDurationLimit(const long duration);
@@ -85,8 +87,6 @@ int main(int argc, const char * argv[]) {
     
     return NO_ERR;
 }
-#else
-#include "../../UnitTests/test.h"
 #endif
 
 void commandLineArgHandler(int argc, const char *argv[]) {
@@ -153,16 +153,19 @@ bool validateUserInput(char *userInputBuffer, const int inputBufferSize, int *ti
         return false;
     parseNewline(userInputBuffer);
     
-    char *tempTime = NULL, *tempNote = NULL;
+    /* Check only two arguments provided, separated by ' ' or '\t' */
+    char *tempTime = NULL, *tempNote = NULL, *thirdArgument = NULL;
     tempTime = strtok(userInputBuffer, " \t");
     tempNote = strtok(NULL, " \t");
-    if(tempTime == NULL || tempNote == NULL)
+    thirdArgument = strtok(NULL, " \t");
+    if(tempTime == NULL || tempNote == NULL || thirdArgument != NULL)
         return false;
+    
+    /* Check the two arguments contain only integers then convert strings to ints */
     if(!isOnlyInt(tempTime) || !isOnlyInt(tempNote))
         return false;
     *timeStamp = atoi(tempTime);
     *midiNote = atoi(tempNote);
-    //sscanf(userInputBuffer, "%d %d", timeStamp, midiNote);
     return true;
 }
 
@@ -193,16 +196,16 @@ void writeNoteData(struct Note *notes, int noteIndex, int timeStamp, int midiNot
 }
 
 void timestampToDurationHandler(struct Note *notes, int noteIndex, int timeStamp) {
-    if(noteIndex < 1)
-        return;
     static int previousTimestamp = 0;
-    if(timeStamp - previousTimestamp <= 0) {
+    
+    if(noteIndex < 1) {} /* Do nothing */
+    else if(timeStamp - previousTimestamp <= 0)
         error("The time values need to be non-negative and increasing in value.",
             OUT_OF_BOUNDS_VALUE);
-    }
+    else
+        notes[noteIndex - 1].duration = timeStamp - previousTimestamp;
     
-    notes[noteIndex - 1].duration = timeStamp - previousTimestamp;
-    previousTimestamp = timeStamp;
+    previousTimestamp = timeStamp; /* Executes every call */
     return;
 }
 
@@ -252,6 +255,8 @@ bool isOnlyInt(const char *string) {
     for(int index = 0; index < (strlen(string) / sizeof(char)); ++index) {
         if((string[index] < 48 || 57 < string[index]) && retValue)
             retValue = false;
+        if(index == 0 && string[index] == 45)   /*  If the first character is '-', override the  */
+            retValue = true;                    /*  retValue as this is still valid              */
     }
     return retValue;
 }

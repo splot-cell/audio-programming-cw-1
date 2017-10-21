@@ -9,6 +9,7 @@ TEST_GROUP(Samples) {};
 TEST_GROUP(StringTesting) {};
 TEST_GROUP(DurationTests) {};
 TEST_GROUP(MidiTests) {};
+TEST_GROUP(HelperFunctions) {};
 
 TEST(Samples, initialSampleAccurate) {
    double result = calculateAngle(0, 1376.42, 0);
@@ -24,6 +25,18 @@ TEST(StringTesting, isOnlyInt_identifiesZero) {
 	const char *input = "0";
 	bool result = isOnlyInt(input);
 	CHECK(result);
+}
+
+TEST(StringTesting, isOnlyInt_identifiesNegative) {
+	const char *input = "-0";
+	bool result = isOnlyInt(input);
+	CHECK(result);
+}
+
+TEST(StringTesting, isOnlyInt_identifiesNegativeInMiddle) {
+	const char *input = "0-0";
+	bool result = isOnlyInt(input);
+	CHECK(!result);
 }
 
 TEST(StringTesting, isOnlyInt_identifies9) {
@@ -97,4 +110,22 @@ TEST(MidiTests, midiToFrequency_noteC1) {
 TEST(MidiTests, midiToFrequency_note103) {
 	double result = midiToFrequency(103);
 	DOUBLES_EQUAL(3135.96 ,result, 0.01);
+}
+
+TEST(HelperFunctions, timeStampHandler_ignores_first_note) {
+	struct Note notes[10];
+	notes[0].duration = 10;
+	timestampToDurationHandler(notes, 0, 50);
+	DOUBLES_EQUAL(10, notes[0].duration, 0.0000001);
+}
+
+TEST(HelperFunctions, timeStampHandler_overrides_previous_note) {
+	struct Note notes[10];
+	notes[0].duration = 10;
+	notes[1].duration = 15;
+	timestampToDurationHandler(notes, 0, 50);
+	DOUBLES_EQUAL(10, notes[0].duration, 0.0000001);
+	timestampToDurationHandler(notes, 1, 70);
+	DOUBLES_EQUAL(20, notes[0].duration, 0.0000001);
+	DOUBLES_EQUAL(15, notes[1].duration, 0.0000001);
 }
