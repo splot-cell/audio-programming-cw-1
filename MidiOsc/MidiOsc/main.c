@@ -211,11 +211,11 @@ void timestampToDurationHandler(struct Note *notes, int noteIndex, int timeStamp
 
 void printNotes(struct Note *notes) {
     int noteIndex = 0;
-    double lastSample = 0;
+    double finalRadianAngle = 0;
     while(notes[noteIndex].midiNote >= 0) {
-        lastSample = printNote(notes[noteIndex]);
+        finalRadianAngle = printNote(notes[noteIndex++]);
     }
-    printf("%.6f\n", sin(lastSample));
+    printf("%.6f\n", sin(finalRadianAngle));
     /*
      *  In order to avoid phase issues, must print last sample of previous frequency at beginning of
      *  next frequency. This means that there will be one un-printed sample after the last frequency
