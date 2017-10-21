@@ -52,7 +52,7 @@ bool validateUserInput(char *userInputBuffer, const int inputBufferSize, int *ti
 void parseNewline(char *userInputBuffer);
 void flushStdin();
 void writeNoteData(struct Note *notes, int noteIndex, int timeStamp, int midiNote);
-void timestampToDurationHandler(struct Note *notes, int noteIndex, int timeStamp);
+bool timestampToDurationHandler(struct Note *notes, int noteIndex, int timeStamp);
 double midiToFrequency(const int midiNote);
 void printNotes(struct Note *notes);
 double printNote(struct Note note);
@@ -190,23 +190,26 @@ void writeNoteData(struct Note *notes, int noteIndex, int timeStamp, int midiNot
               OUT_OF_BOUNDS_VALUE);
     }
     
-    timestampToDurationHandler(notes, noteIndex, timeStamp);
+    if(!timestampToDurationHandler(notes, noteIndex, timeStamp))
+        error("The time values need to be non-negative and increasing in value.",
+              OUT_OF_BOUNDS_VALUE);
     
     notes[noteIndex].midiNote = midiNote;
 }
 
-void timestampToDurationHandler(struct Note *notes, int noteIndex, int timeStamp) {
+bool timestampToDurationHandler(struct Note *notes, int noteIndex, int timeStamp) {
     static int previousTimestamp = 0;
+    if(timeStamp < 0)
+        return false;
     
-    if(noteIndex < 1) {} /* Do nothing */
+    if(noteIndex < 1) {}            /*  Do nothing  */
     else if(timeStamp - previousTimestamp <= 0)
-        error("The time values need to be non-negative and increasing in value.",
-            OUT_OF_BOUNDS_VALUE);
+        return false;
     else
         notes[noteIndex - 1].duration = timeStamp - previousTimestamp;
     
-    previousTimestamp = timeStamp; /* Executes every call */
-    return;
+    previousTimestamp = timeStamp;  /*  Executes every call */
+    return true;
 }
 
 void printNotes(struct Note *notes) {
@@ -238,7 +241,7 @@ double printNote(struct Note note) {
     
     // Store the radian value used to calulate NEXT sample as this will be the starting sample of
     // the next oscillation.
-    lastRadianAngle = calculateAngle(note.duration * frequency / g_sampleRate,
+    lastRadianAngle = calculateAngle(note.duration * g_sampleRate / 1000,
                                      frequency, lastRadianAngle);
     return lastRadianAngle;
 }

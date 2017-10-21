@@ -123,9 +123,33 @@ TEST(HelperFunctions, timeStampHandler_overrides_previous_note) {
 	struct Note notes[10];
 	notes[0].duration = 10;
 	notes[1].duration = 15;
-	timestampToDurationHandler(notes, 0, 50);
+	bool result = timestampToDurationHandler(notes, 0, 50);
 	DOUBLES_EQUAL(10, notes[0].duration, 0.0000001);
-	timestampToDurationHandler(notes, 1, 70);
+	CHECK(result);
+	result = timestampToDurationHandler(notes, 1, 70);
+	CHECK(result);
 	DOUBLES_EQUAL(20, notes[0].duration, 0.0000001);
 	DOUBLES_EQUAL(15, notes[1].duration, 0.0000001);
+}
+
+TEST(HelperFunctions, timeStampHandler_identifies_invalid_first_run) {
+	struct Note notes[10];
+	notes[0].duration = 10;
+	notes[1].duration = 15;
+	bool result = timestampToDurationHandler(notes, 0, -1);
+	DOUBLES_EQUAL(10, notes[0].duration, 0.0000001);
+	CHECK(!result);
+}
+
+TEST(HelperFunctions, timeStampHandler_identifies_invalid_subsequent_runs) {
+	struct Note notes[10];
+	notes[0].duration = 10;
+	notes[1].duration = 15;
+	bool result = timestampToDurationHandler(notes, 0, 0);
+	DOUBLES_EQUAL(10, notes[0].duration, 0.0000001);
+	CHECK(result);
+	result = timestampToDurationHandler(notes, 1, -2);
+	CHECK(!result);
+	result = timestampToDurationHandler(notes, 1, -1);
+	CHECK(!result);
 }

@@ -38,7 +38,7 @@ bool validateUserInput(char *userInputBuffer, const int inputBufferSize, int *ti
 void parseNewline(char *userInputBuffer);
 void flushStdin();
 void writeNoteData(struct Note *notes, int noteIndex, int timeStamp, int midiNote);
-void timestampToDurationHandler(struct Note *notes, int noteIndex, int timeStamp);
+bool timestampToDurationHandler(struct Note *notes, int noteIndex, int timeStamp);
 double midiToFrequency(const int midiNote);
 void printNotes(struct Note *notes);
 double printNote(struct Note note);
