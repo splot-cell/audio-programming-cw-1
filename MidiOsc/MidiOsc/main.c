@@ -151,7 +151,7 @@ bool validateUserInput(char *userInputBuffer, int *timeStamp, int *midiNote) {
     if(tempTime == NULL || tempNote == NULL)
         return false;
     // Parse for \n character
-    if(!isOnlyInt(tempTime) || !isOnlyInt(tempNote))
+    if(!isOnlyInt(tempTime) || !isOnlyInt(tempNote)) // Should be able to combine into one statement using brackets but test carefully
         return false;
     *timeStamp = atoi(tempTime);
     *midiNote = atoi(tempNote);
