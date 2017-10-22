@@ -47,12 +47,12 @@ void printWithBorder(char *message[], int rows, int borderWidth);
  *  If the a string input is too long for the row it will be cut short.
  */
 void populateNotes(struct Note *notes, int numberOfLines);
-bool validateUserInput(char *userInputBuffer, const int inputBufferSize, int *timeStamp,
+bool validateUserInput(char *userInputBuffer, const int inputBufferSize, int *timestamp,
                        int *midiNote);
 void parseNewline(char *userInputBuffer);
 void flushStdin();
-void writeNoteData(struct Note *notes, int noteIndex, int timeStamp, int midiNote);
-bool timestampToDurationHandler(struct Note *notes, int noteIndex, int timeStamp);
+void writeNoteData(struct Note *notes, int noteIndex, int timestamp, int midiNote);
+bool timestampToDurationHandler(struct Note *notes, int noteIndex, int timestamp);
 double midiToFrequency(const int midiNote);
 void printNotes(struct Note *notes);
 double printNote(struct Note note);
@@ -112,6 +112,7 @@ void sendHelp() {
         "-- Help Documentation --"
     };
     printWithBorder(helpTitle, sizeof(helpTitle) / sizeof(helpTitle[0]), 3);
+    printf("%c",'\n');
     char *helpText[] = {//----------------------------single line character limit---|
         "This program will print the samples of a sine wave as floating point numbers",
         "to six decimal places. Simply enter two integers and watch it go! The format",
@@ -135,19 +136,19 @@ void sendHelp() {
 void populateNotes(struct Note *notes, int numberOfLines) {
     const int inputBufferSize = 31;
     char userInputBuffer[inputBufferSize] = {0};
-    int noteIndex = 0, tempTimeStamp = 0, tempMidiNote = 0;
+    int noteIndex = 0, tempTimestamp = 0, tempMidiNote = 0;
     
     do {
-        if(!validateUserInput(userInputBuffer, inputBufferSize, &tempTimeStamp, &tempMidiNote))
+        if(!validateUserInput(userInputBuffer, inputBufferSize, &tempTimestamp, &tempMidiNote))
             error("User input not in a recognised format.", BAD_RUNTIME_ARG);
         
-        writeNoteData(notes, noteIndex, tempTimeStamp, tempMidiNote);
+        writeNoteData(notes, noteIndex, tempTimestamp, tempMidiNote);
         
     } while(notes[noteIndex++].midiNote >= 0 && noteIndex < numberOfLines);
     notes[numberOfLines - 1].midiNote = -1; // Ensures 100th midiNote will end printing loop
 }
 
-bool validateUserInput(char *userInputBuffer, const int inputBufferSize, int *timeStamp,
+bool validateUserInput(char *userInputBuffer, const int inputBufferSize, int *timestamp,
                        int *midiNote) {
     if(fgets(userInputBuffer, inputBufferSize, stdin) == NULL)
         return false;
@@ -164,7 +165,7 @@ bool validateUserInput(char *userInputBuffer, const int inputBufferSize, int *ti
     /* Check the two arguments contain only integers then convert strings to ints */
     if(!isOnlyInt(tempTime) || !isOnlyInt(tempNote))
         return false;
-    *timeStamp = atoi(tempTime);
+    *timestamp = atoi(tempTime);
     *midiNote = atoi(tempNote);
     return true;
 }
@@ -184,31 +185,31 @@ void flushStdin() {
     return;
 }
 
-void writeNoteData(struct Note *notes, int noteIndex, int timeStamp, int midiNote) {
+void writeNoteData(struct Note *notes, int noteIndex, int timestamp, int midiNote) {
     if(midiNote > 127) {
         error("The MIDI ‘note on’ message contains data out of bounds.",
               OUT_OF_BOUNDS_VALUE);
     }
     
-    if(!timestampToDurationHandler(notes, noteIndex, timeStamp))
+    if(!timestampToDurationHandler(notes, noteIndex, timestamp))
         error("The time values need to be non-negative and increasing in value.",
               OUT_OF_BOUNDS_VALUE);
     
     notes[noteIndex].midiNote = midiNote;
 }
 
-bool timestampToDurationHandler(struct Note *notes, int noteIndex, int timeStamp) {
+bool timestampToDurationHandler(struct Note *notes, int noteIndex, int timestamp) {
     static int previousTimestamp = 0;
-    if(timeStamp < 0)
+    if(timestamp < 0)
         return false;
     
     if(noteIndex < 1) {}            /*  Do nothing  */
-    else if(timeStamp - previousTimestamp <= 0)
+    else if(timestamp - previousTimestamp <= 0)
         return false;
     else
-        notes[noteIndex - 1].duration = timeStamp - previousTimestamp;
+        notes[noteIndex - 1].duration = timestamp - previousTimestamp;
     
-    previousTimestamp = timeStamp;  /*  Executes every call */
+    previousTimestamp = timestamp;  /*  Executes every call */
     return true;
 }
 
