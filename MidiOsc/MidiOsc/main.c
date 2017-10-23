@@ -144,6 +144,9 @@ void populateNotes(struct Note *notes, int numberOfLines) {
         
         writeNoteData(notes, noteIndex, tempTimestamp, tempMidiNote);
         
+        if(noteIndex == 0 && notes[noteIndex].midiNote < 0)
+            error("No valid midi note values entered. Cannot print samples.", BAD_RUNTIME_ARG);
+        
     } while(notes[noteIndex++].midiNote >= 0 && noteIndex < numberOfLines);
     notes[numberOfLines - 1].midiNote = -1; // Ensures 100th midiNote will end printing loop
 }
