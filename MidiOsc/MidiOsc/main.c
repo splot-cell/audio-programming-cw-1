@@ -18,13 +18,6 @@
 #include "../../UnitTests/test.h"
 #else
 
-/*  GLOBAL VARIABLES */
-const int g_sampleRate = 48000;
-const double g_pi = 3.14159265359;
-const double g_tau = 2 * g_pi;
-const double g_referenceMidiNote = 69;      //  Midi note 69 is A above middle C.
-const double g_referenceFrequency = 440;    //  Desired frequency of g_referenceMidiNote.
-
 /*  STRUCTS */
 struct Note {
     int duration;
@@ -39,6 +32,13 @@ enum ERR {
     OUT_OF_BOUNDS_VALUE
 };
 
+/*  GLOBAL VARIABLES */
+const int g_sampleRate = 48000;
+const double g_pi = 3.14159265359;
+const double g_tau = 2 * g_pi;
+const double g_referenceMidiNote = 69;   // Midi note 69 is A above middle C.
+const double g_referenceFrequency = 440; // Desired frequency of g_referenceMidiNote.
+
 /*  FUNCTION PROTOTYPES */
 
 /*  For handling command line arguments */
@@ -50,8 +50,8 @@ void printWithBorder( char *message[], int rows, int borderWidth );
 /*  For storing user input in an array of notes */
 void populateNotes( struct Note *notes, int numberOfLines );
 bool getUserInput( char *userInputBuffer, const int inputBufferSize, long *timestamp,
-                       long *midiNote );
-bool separateArguments( char *userInputBuffer, char *tempTime, char *tempNote );
+                  long *midiNote );
+bool separateArguments( char *userInputBuffer, char **tempTime, char **tempNote );
 void parseNewline( char *userInputBuffer );
 void flushStdin();
 void writeNoteData( struct Note *notes, int noteIndex, long timestamp, long midiNote );
@@ -96,6 +96,7 @@ int main( int argc, const char * argv[] ) {
 }
 #endif
 
+
 void commandLineArgHandler( int argc, const char *argv[] ) {
     if ( argc > 2 ) {
         error( "Maximum of one runtime argument accepted.", BAD_COMMAND_LINE );
@@ -105,6 +106,7 @@ void commandLineArgHandler( int argc, const char *argv[] ) {
     }
     return;
 }
+
 
 void detectHelp( const char *arguments[] ) {
     if ( strcmp( arguments[1], "-help" ) == 0 ) {
@@ -116,6 +118,7 @@ void detectHelp( const char *arguments[] ) {
               BAD_COMMAND_LINE );
     }
 }
+
 
 void sendHelp() {
     char *helpTitle[] = {
@@ -144,6 +147,7 @@ void sendHelp() {
     return;
 }
 
+
 void populateNotes( struct Note *notes, int numberOfLines ) {
     
     const int inputBufferSize = 31;
@@ -167,6 +171,7 @@ void populateNotes( struct Note *notes, int numberOfLines ) {
     notes[ numberOfLines - 1 ].midiNote = -1; // Ensures 100th note value is negative
 }
 
+
 bool getUserInput( char *userInputBuffer, const int inputBufferSize,
                   long *timestamp, long *midiNote ) {
     if ( fgets( userInputBuffer, inputBufferSize, stdin ) == NULL ) {
@@ -176,7 +181,7 @@ bool getUserInput( char *userInputBuffer, const int inputBufferSize,
     
     /* Check only two arguments provided, separated by ' ' or '\t' */
     char *tempTime = NULL, *tempNote = NULL;
-    if ( !separateArguments( userInputBuffer, tempTime, tempNote ) ) {
+    if ( !separateArguments( userInputBuffer, &tempTime, &tempNote ) ) {
         return false;
     }
     
@@ -190,19 +195,22 @@ bool getUserInput( char *userInputBuffer, const int inputBufferSize,
     return true;
 }
 
-bool separateArguments( char *userInputBuffer, char *tempTime, char *tempNote ) {
+
+bool separateArguments( char *userInputBuffer, char **tempTime, char **tempNote ) {
+    /* Uses pointers to pointers in order to modify pointers passed in. */
     
     char *thirdArgument = NULL;
     
-    tempTime = strtok( userInputBuffer, " \t" );
-    tempNote = strtok( NULL, " \t" );
+    *tempTime = strtok( userInputBuffer, " \t" );
+    *tempNote = strtok( NULL, " \t" );
     thirdArgument = strtok( NULL, " \t" );
     
-    if ( tempTime == NULL || tempNote == NULL || thirdArgument != NULL ) {
+    if ( *tempTime == NULL || *tempNote == NULL || thirdArgument != NULL ) {
         return false;
     }
     return true;
 }
+
 
 void parseNewline( char *userInputBuffer ) {
     char *p;
@@ -215,11 +223,13 @@ void parseNewline( char *userInputBuffer ) {
     return;
 }
 
+
 void flushStdin() {
     scanf( "%*[^\n]" ); // Scan and discard up to next newline character
     scanf( "%*c" );     // Discard next character (the newline)
     return;
 }
+
 
 void writeNoteData( struct Note *notes, int noteIndex, long timestamp, long midiNote ) {
     
@@ -235,6 +245,7 @@ void writeNoteData( struct Note *notes, int noteIndex, long timestamp, long midi
     
     notes[ noteIndex ].midiNote = (int) midiNote;
 }
+
 
 bool timestampToDurationHandler( struct Note *notes, int noteIndex, long timestamp ) {
     
@@ -261,6 +272,7 @@ bool timestampToDurationHandler( struct Note *notes, int noteIndex, long timesta
     return true;
 }
 
+
 void printNotes( struct Note *notes ) {
     
     int noteIndex = 0;
@@ -277,6 +289,7 @@ void printNotes( struct Note *notes ) {
      
     return;
 }
+
 
 double printNote( struct Note note ) {
     
@@ -295,6 +308,7 @@ double printNote( struct Note note ) {
                                      frequency, lastRadianAngle );
     return lastRadianAngle;
 }
+
 
 double calculateAngle( unsigned int sampleIndex, double frequency, double lastRadianAngle ) {
     return fmod( ( g_tau * frequency * sampleIndex / g_sampleRate ) + lastRadianAngle, g_tau );
@@ -320,11 +334,11 @@ bool isOnlyInt( const char *string ) {
     return retValue;
 }
 
+
 bool withinDurationLimit( int duration, int noteIndex ) {
-    /*
-     *  Creates limit for maximum duration note accepted. Ensures that a loop isn't created when
-     *  printing the samples due to the sampleIndex overflowing.
-     */
+    /*  Creates limit for maximum duration note accepted. Ensures that a loop isn't created when
+     *  printing the samples due to the sampleIndex overflowing. */
+    
     double overflowCheck = INT_MAX / duration;
     
     if ( overflowCheck < g_sampleRate / 1000 ) {
@@ -335,25 +349,26 @@ bool withinDurationLimit( int duration, int noteIndex ) {
     return true;
 }
 
+
 double midiToFrequency( const int midiNote ) {
     return ( pow( 2, ( midiNote - g_referenceMidiNote ) / 12. ) ) * g_referenceFrequency;
 }
+
 
 void error( const char *message, int errorCode ) {
     printf( "%s\n", message );
     exit( errorCode );
 }
 
+
 void printWithBorder( char *message[], int rows, int borderWidth ) {
-    /*
-     *  Prints message with a border.
+    /*  Prints message with a border.
      *
      *  <message> is array of strings. Each string is a line to be printed.
      *  <rows> parameter is total number of lines.
      *
      *  Appearance can be set from within the funciton body.
-     *  If the a string input is too long for the row it will be cut short.
-     */
+     *  If the a string input is too long for the row it will be cut short. */
     
     int pad = 1, numColumns = 80,
         numRows = rows  + ( 2 * ( pad + borderWidth ) );
