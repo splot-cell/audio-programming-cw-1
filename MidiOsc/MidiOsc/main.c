@@ -6,7 +6,7 @@
 //  Copyright © 2017 Olly Seber. All rights reserved.
 //
 
-#include <stdio.h>      // For user inputs and printf.
+#include <stdio.h>      // For user inputs, printf(), sprintf().
 #include <math.h>       // For sin() and fmod().
 #include <stdbool.h>    // For booleans.
 #include <string.h>     // For strlen(), strcmp(), strtok().
@@ -37,22 +37,13 @@ void commandLineArgHandler(int argc, const char *argv[]);
 void detectHelp(const char *arguments[]);
 void sendHelp();
 void printWithBorder(char *message[], int rows, int borderWidth);
-/*
- *  Prints message with a border.
- *
- *  <message> is array of strings. Each string is a line to be printed.
- *  <rows> parameter is total number of lines.
- *
- *  Appearance can be set from within the funciton body.
- *  If the a string input is too long for the row it will be cut short.
- */
 void populateNotes(struct Note *notes, int numberOfLines);
-bool validateUserInput(char *userInputBuffer, const int inputBufferSize, int *timestamp,
-                       int *midiNote);
+bool validateUserInput(char *userInputBuffer, const int inputBufferSize, long *timestamp,
+                       long *midiNote);
 void parseNewline(char *userInputBuffer);
 void flushStdin();
-void writeNoteData(struct Note *notes, int noteIndex, int timestamp, int midiNote);
-bool timestampToDurationHandler(struct Note *notes, int noteIndex, int timestamp);
+void writeNoteData(struct Note *notes, int noteIndex, long timestamp, long midiNote);
+bool timestampToDurationHandler(struct Note *notes, int noteIndex, long timestamp);
 double midiToFrequency(const int midiNote);
 void printNotes(struct Note *notes);
 double printNote(struct Note note);
@@ -70,7 +61,7 @@ bool isOnlyInt(const char *string);
      *  be numerical digits.
      *  Provides more robust checking of user input than just scanf or sscanf.
      */
-bool withinDurationLimit(const long duration);
+bool withinDurationLimit(int duration, int noteIndex);
     //  Checks that duration will not cause overflow of sample index.
 void error(const char *message, int code);
     //  Helper function, prints error warning and exits program.
@@ -136,7 +127,8 @@ void sendHelp() {
 void populateNotes(struct Note *notes, int numberOfLines) {
     const int inputBufferSize = 31;
     char userInputBuffer[inputBufferSize] = {0};
-    int noteIndex = 0, tempTimestamp = 0, tempMidiNote = 0;
+    int noteIndex = 0;
+    long tempTimestamp = 0, tempMidiNote = 0;
     
     do {
         if(!validateUserInput(userInputBuffer, inputBufferSize, &tempTimestamp, &tempMidiNote))
@@ -148,11 +140,11 @@ void populateNotes(struct Note *notes, int numberOfLines) {
             error("No valid midi note values entered. Cannot print samples.", BAD_RUNTIME_ARG);
         
     } while(notes[noteIndex++].midiNote >= 0 && noteIndex < numberOfLines);
-    notes[numberOfLines - 1].midiNote = -1; // Ensures 100th midiNote will end printing loop
+    notes[numberOfLines - 1].midiNote = -1; // Ensures 100th note value is negative
 }
 
-bool validateUserInput(char *userInputBuffer, const int inputBufferSize, int *timestamp,
-                       int *midiNote) {
+bool validateUserInput(char *userInputBuffer, const int inputBufferSize, long *timestamp,
+                       long *midiNote) {
     if(fgets(userInputBuffer, inputBufferSize, stdin) == NULL)
         return false;
     parseNewline(userInputBuffer);
@@ -165,11 +157,11 @@ bool validateUserInput(char *userInputBuffer, const int inputBufferSize, int *ti
     if(tempTime == NULL || tempNote == NULL || thirdArgument != NULL)
         return false;
     
-    /* Check the two arguments contain only integers then convert strings to ints */
+    /* Check the two arguments contain only integers then convert strings to longs */
     if(!isOnlyInt(tempTime) || !isOnlyInt(tempNote))
         return false;
-    *timestamp = atoi(tempTime);
-    *midiNote = atoi(tempNote);
+    *timestamp = strtol(tempTime, NULL, 10);
+    *midiNote = strtol(tempNote, NULL, 10);
     return true;
 }
 
@@ -188,8 +180,8 @@ void flushStdin() {
     return;
 }
 
-void writeNoteData(struct Note *notes, int noteIndex, int timestamp, int midiNote) {
-    if(midiNote > 127) {
+void writeNoteData(struct Note *notes, int noteIndex, long timestamp, long midiNote) {
+    if(midiNote > 127 || midiNote < INT_MIN) {
         error("The MIDI ‘note on’ message contains data out of bounds.",
               OUT_OF_BOUNDS_VALUE);
     }
@@ -198,10 +190,14 @@ void writeNoteData(struct Note *notes, int noteIndex, int timestamp, int midiNot
         error("The time values need to be non-negative and increasing in value.",
               OUT_OF_BOUNDS_VALUE);
     
-    notes[noteIndex].midiNote = midiNote;
+    notes[noteIndex].midiNote = (int) midiNote;
 }
 
-bool timestampToDurationHandler(struct Note *notes, int noteIndex, int timestamp) {
+bool timestampToDurationHandler(struct Note *notes, int noteIndex, long timestamp) {
+    if(timestamp > INT_MAX || timestamp < INT_MIN)
+        error("The timestamp you have entered will cause overflow. Please choose a smaller value.",
+              OUT_OF_BOUNDS_VALUE);
+    
     static int previousTimestamp = 0;
     if(timestamp < 0)
         return false;
@@ -209,10 +205,12 @@ bool timestampToDurationHandler(struct Note *notes, int noteIndex, int timestamp
     if(noteIndex < 1) {}            /*  Do nothing  */
     else if(timestamp - previousTimestamp <= 0)
         return false;
-    else
-        notes[noteIndex - 1].duration = timestamp - previousTimestamp;
+    else {
+        notes[noteIndex - 1].duration = (int) timestamp - previousTimestamp;
+        withinDurationLimit(notes[noteIndex - 1].duration, noteIndex);
+    }
     
-    previousTimestamp = timestamp;  /*  Executes every call */
+    previousTimestamp = (int) timestamp;  /*  Executes every call */
     return true;
 }
 
@@ -268,10 +266,17 @@ bool isOnlyInt(const char *string) {
     return retValue;
 }
 
-bool withinDurationLimit(const long duration) {
-    long numSamples = duration * g_sampleRate / 1000;
-    if(numSamples > UINT_MAX)
-        return false;
+bool withinDurationLimit(int duration, int noteIndex) {
+    /*
+     *  Creates limit for maximum duration note accepted. Ensures that a loop isn't created when
+     *  printing the samples due to the sampleIndex overflowing.
+     */
+    double overflowCheck = INT_MAX / duration;
+    if(overflowCheck < g_sampleRate / 1000) {
+        char errorMessage[50];
+        sprintf(errorMessage, "The duration of note number %d is too long!", noteIndex);
+        error(errorMessage, OUT_OF_BOUNDS_VALUE);
+    }
     return true;
 }
 
@@ -285,38 +290,48 @@ void error(const char *message, int code) {
 }
 
 void printWithBorder(char *message[], int rows, int borderWidth) {
-    /* Set up border parameters */
+    /*
+     *  Prints message with a border.
+     *
+     *  <message> is array of strings. Each string is a line to be printed.
+     *  <rows> parameter is total number of lines.
+     *
+     *  Appearance can be set from within the funciton body.
+     *  If the a string input is too long for the row it will be cut short.
+     */
+    
+    /*  Set up border parameters */
     int pad = 1, numColumns = 80, numRows = rows  + (2*(pad+borderWidth));
     
     for(int r = 0; r < numRows; ++r) {
         for(int c = 0; c < numColumns; ++c) {
-            /* If we're in the border rows or columns */
+            /*  If we're in the border rows or columns */
             if(r < borderWidth || r >= numRows - borderWidth ||
                c < borderWidth || c >= numColumns - borderWidth)
                 printf("%c", '*');
             
-            /* If we're wthin the padding rows or columns */
+            /*  If we're wthin the padding rows or columns */
             else if(r < pad + borderWidth || r >= numRows - borderWidth - pad ||
                     c < pad + borderWidth || c >= numColumns - borderWidth - pad)
                 printf("%c", ' ');
             
             
             else {
-                /* We must now be in the rows and columns with potential text */
+                /*  We must now be in the rows and columns with potential text */
                 
-                /* Integer divide remainig whitespace by 2 */
+                /*  Integer divide remainig whitespace by 2 */
                 int centreOffset = (int) ((numColumns -
                                 strlen(message[r - borderWidth - pad])) / 2) - pad - borderWidth;
                 
-                /* Fill in whitespace before printing message */
+                /*  Fill in whitespace before printing message */
                 if(c - borderWidth - pad < centreOffset)
                     printf("%c", ' ');
                 
-                /* Printing message */
+                /*  Printing message */
                 else if(strlen(message[r-borderWidth-pad]) > c - centreOffset - borderWidth - pad)
                     printf("%c", message[r-borderWidth-pad][c - centreOffset - borderWidth - pad]);
                 
-                /* Finishing whitespace */
+                /*  Finishing whitespace */
                 else
                     printf("%c", ' ');
             }
