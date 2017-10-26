@@ -289,6 +289,7 @@ bool getUserInput( char *userInputBuffer, const int inputBufferSize,
     if ( fgets( userInputBuffer, inputBufferSize, stdin ) == NULL ) {
         return false;
     }
+    /* Check that only up to 30 characters have been entered, and replace '\n' with '\0' */
     parseNewline( userInputBuffer );
     
     /* Check only two arguments provided, separated by ' ' or '\t' */
@@ -317,6 +318,7 @@ bool separateArguments( char *userInputBuffer, char **tempTime, char **tempNote 
     *tempNote = strtok( NULL, " \t" );
     thirdArgument = strtok( NULL, " \t" );
     
+    /* First two arguments must not be null, and third must be null */
     if ( *tempTime == NULL || *tempNote == NULL || thirdArgument != NULL ) {
         return false;
     }
@@ -343,6 +345,7 @@ void writeNoteData( struct Note *notes, int noteIndex, long timestamp, long midi
                 OUT_OF_BOUNDS_VALUE );
     }
     
+    /* Convert timestamps to duration and write to previous note */
     if ( !timestampToDurationHandler( notes, noteIndex, timestamp ) ) {
         error( "The time values need to be non-negative and increasing in value.",
                 OUT_OF_BOUNDS_VALUE );
