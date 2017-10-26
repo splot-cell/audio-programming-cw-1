@@ -262,7 +262,7 @@ void printWithBorder( char *message[], int rows, int borderWidth ) {
 
 void populateNotes( struct Note *notes, int numberOfLines ) {
     
-    const int inputBufferSize = 31;
+    const int inputBufferSize = 32; // 32 characters required by fgets for 30 user characters + '\n'
     char userInputBuffer[ inputBufferSize ] = { 0 };
     int noteIndex = 0;
     long tempTimestamp = 0, tempMidiNote = 0;
