@@ -88,7 +88,7 @@ TEST(StringTesting, isOnlyInt_identifiesOnlyNULL) {
 }
 
 TEST(DurationTests, withinDuration_isTrue) {
-	bool result = withinDurationLimit(0, 0);
+	bool result = withinDurationLimit(1, 1);
 	CHECK(result);
 }
 

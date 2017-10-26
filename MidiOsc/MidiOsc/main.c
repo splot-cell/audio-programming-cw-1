@@ -20,8 +20,8 @@
 
 /*  STRUCTS */
 struct Note {
-    int duration;
-    int midiNote;
+    int duration; // Length of note in milliseconds.
+    int midiNote; // Midi note number of note.
 };
 
 /*  ERROR MESSAGES */
@@ -42,43 +42,103 @@ const double g_referenceFrequency = 440; // Desired frequency of g_referenceMidi
 /*  FUNCTION PROTOTYPES */
 
 /*  For handling command line arguments */
+
+/*      commandLineArgHandler()
+ *  Passed command line arguments upon program start.
+ *  Checks number of arguments:
+ *      - Throws error if more than 2 arguments.
+ *      - If exactly 2 calls detectHelp() on second argument.
+ *      - If less than 2 returns to main function. */
 void commandLineArgHandler( int argc, const char *argv[] );
-void detectHelp( const char *arguments[] );
+
+/*      detectHelp()
+ *  Compares <string> to "-help". If equal, calls functions to print help documentation.
+ *  Otherwise sends error message. */
+void detectHelp( const char *string[] );
+
+/*      sendHelp()
+ *  Contains the help documentation, prints this using printWithBorder and exits program. */
 void sendHelp();
+
+/*      printWithBorder()
+ *  Prints array of strings <message> as lines of text with a border of asterisks.
+ *  <rows> = total number of strings in array, i.e. number of lines of text to print.
+ *  <borderWidth> defines the size of the border. */
 void printWithBorder( char *message[], int rows, int borderWidth );
 
 /*  For storing user input in an array of notes */
+
+/*      populateNotes()
+ *  Takes in array of "struct Note" variables as <notes>.
+ *  Handles populating array with data of up to <numberOfLines> Notes from user input. */
 void populateNotes( struct Note *notes, int numberOfLines );
+
+/*      getUserInput()
+ *  Populates <userInputBuffer> of size <inputBufferSize> with runtime input from user.
+ *  Handles validating data is in format of <int> <int>.
+ *  Two extracted long ints are then written to <timestamp> and <midiNote> respectively. */
 bool getUserInput( char *userInputBuffer, const int inputBufferSize, long *timestamp,
                   long *midiNote );
+
+/*      separateArguments()
+ *  Separates <userInputBuffer> into two separate strings which are written to <tempTime> and
+ *  <tempNote>. Error is thrown if three (or more) strings detected. */
 bool separateArguments( char *userInputBuffer, char **tempTime, char **tempNote );
+
+/*      parseNewline()
+ *  Searches string <userInputBuffer> for '\n' and replaces it with '\0'. If no newline character
+ *  detected user has entered too many characters so error is thrown. */
 void parseNewline( char *userInputBuffer );
-void flushStdin();
+
+/*      writeNoteData()
+ *  Handles range checking of <timestamp> and <midiNote>, and conversion of <timestamp> to a
+ *  duration.
+ *  Writes the duration and midi note number into the Note <notes>[ noteIndex ]. */
 void writeNoteData( struct Note *notes, int noteIndex, long timestamp, long midiNote );
+
+/*      isOnlyInt()
+ *  Converts the <timestamp>s for a series of notes into durations and writes them to the relevent
+ *  <noteIndex> within <notes>. */
 bool timestampToDurationHandler( struct Note *notes, int noteIndex, long timestamp );
 
 /*  User input santising helper functions */
-bool isOnlyInt( const char *string );
-    //  Input a string from stdin. Each character checked in turn.
-    //  First character can be '-' or a numerical digit ('0'-'9'). Subsequent characters can only
-    //  be numerical digits.
-    //  Provides more robust checking of user input than just scanf or sscanf.
-bool withinDurationLimit( int duration, int noteIndex );
-    //  Checks that duration will not cause overflow of sample index.
 
+/*      isOnlyInt()
+ *  Input of a <string>. Each character is evaluated in turn. Returns true or false based on
+ *  evaluation of the following statements:
+ *      - First character can be ascii character '-' or a numerical digit '0' to '9'.
+ *      - Subsequent characters can only be numerical digits. */
+bool isOnlyInt( const char *string );
+
+/*      withinDurationLimit()
+ *  Checks that <duration> will not cause overflow of the sample index when printing samples. Prints
+ *  error message based on <noteIndex> if a duration is too long. */
+bool withinDurationLimit( int duration, int noteIndex );
 
 /*  For printing out the notes */
+
+/*      printNotes()
+ *  Handles printing an array <notes> of "struct Note" variables. */
 void printNotes( struct Note *notes );
-    //  Handles printing of array of notes
+
+/*      printNote()
+ *  Prints a single stuct Note <note>. */
 double printNote( struct Note note );
-    //  Prints single note
+
+/*      midiToFrequency()
+ *  Converts midi note number <midiNote> to a frequency. */
 double midiToFrequency( const int midiNote );
+
+/*      calculateAngle()
+ *  Calculates angle in radians required for sin() function based on <sampleIndex>, <frequency>
+ *  and <lastRadianAngle> (phase offset) parameters. */
 double calculateAngle( unsigned int sampleIndex, double frequency, double lastRadianAngle );
-    //  Helper function for calculating angle to be used in sin()
 
 /*  Other */
+
+/*      error()
+ *  Helper function for printing error messages and codes */
 void error( const char *message, int code );
-    //  Helper function that prints error warning and exits program.
 
 /*  END OF PROTOTYPES */
 
@@ -108,8 +168,8 @@ void commandLineArgHandler( int argc, const char *argv[] ) {
 }
 
 
-void detectHelp( const char *arguments[] ) {
-    if ( strcmp( arguments[1], "-help" ) == 0 ) {
+void detectHelp( const char *string[] ) {
+    if ( strcmp( string[1], "-help" ) == 0 ) {
         sendHelp();
         exit( NO_ERR );
     }
@@ -135,8 +195,8 @@ void sendHelp() {
         "<duration> <midi note number>",
         "",
         "The program will read up to 30 characters on each line, and will ignore any",
-        "extra whitespace. If more than 30 characters are entered, the additional",
-        "ones will be discarded!",
+        "extra whitespace added before, between or after the integers (though this",
+        "does still count towards the 30 characters).",
         "",
         "The program accepts up to 100 pairs of integers, so you can play fun tunes",
         "such as the Family Guy theme song.",
@@ -144,6 +204,58 @@ void sendHelp() {
         "Output will begin once the <midi note number> is set to a value less than 0."
     };
     printWithBorder( helpText, ( sizeof( helpText ) / sizeof( helpText[ 0 ] ) ), 1 );
+    return;
+}
+
+
+void printWithBorder( char *message[], int rows, int borderWidth ) {
+    
+    /* Set up border parameters */
+    int pad = 1, numColumns = 80,
+    numRows = rows  + ( 2 * ( pad + borderWidth ) );
+    
+    for ( int r = 0; r < numRows; ++r ) { // Cycle through each row
+        for ( int c = 0; c < numColumns; ++c ) { // Cycle through each character in the row
+            
+            /* If we're in the border rows or characters */
+            if ( r < borderWidth || r >= numRows - borderWidth ||
+                c < borderWidth || c >= numColumns - borderWidth ) {
+                printf( "%c", '*' );
+            }
+            
+            /* If we're wthin the padding rows or characters */
+            else if ( r < pad + borderWidth || r >= numRows - borderWidth - pad ||
+                     c < pad + borderWidth || c >= numColumns - borderWidth - pad ) {
+                printf( "%c", ' ' );
+            }
+            
+            
+            else { // We must now be in the rows and character 'columns' with potential text
+                
+                /* Integer divide remainig whitespace by 2 */
+                int centreOffset = (int) ( ( numColumns -
+                                            strlen( message[ r - borderWidth - pad ] ) ) / 2 ) - pad - borderWidth;
+                
+                /* Fill in whitespace before printing message */
+                if ( c - borderWidth - pad < centreOffset ) {
+                    printf( "%c", ' ' );
+                }
+                
+                /* Printing message */
+                else if ( strlen( message[ r - borderWidth - pad ] ) >
+                         c - centreOffset - borderWidth - pad ) {
+                    printf( "%c",
+                           message[ r-borderWidth-pad ][ c - centreOffset - borderWidth - pad ] );
+                }
+                
+                /* Finishing whitespace */
+                else {
+                    printf( "%c", ' ' );
+                }
+            }
+        }
+        printf( "%c", '\n' );
+    }
     return;
 }
 
@@ -218,15 +330,8 @@ void parseNewline( char *userInputBuffer ) {
         *p = 0;
     }
     else { // User has entered more than 30 characters
-        flushStdin();
+        error( "Too many characters entered on one line!" , BAD_RUNTIME_ARG );
     }
-    return;
-}
-
-
-void flushStdin() {
-    scanf( "%*[^\n]" ); // Scan and discard up to next newline character
-    scanf( "%*c" );     // Discard next character (the newline)
     return;
 }
 
@@ -249,69 +354,29 @@ void writeNoteData( struct Note *notes, int noteIndex, long timestamp, long midi
 
 bool timestampToDurationHandler( struct Note *notes, int noteIndex, long timestamp ) {
     
+    /* Check range */
     if ( timestamp > INT_MAX || timestamp < INT_MIN ) {
         error( "The timestamp you have entered will cause overflow. Please choose a smaller value.",
                 OUT_OF_BOUNDS_VALUE );
     }
     
-    static int previousTimestamp = 0;
     if ( timestamp < 0 ) {
         return false;
     }
-    
-    if ( noteIndex < 1 ) {} // Do nothing
+
+    static int previousTimestamp = 0;
+    if ( noteIndex < 1 ) {} // Do nothing on first note
     else if ( timestamp - previousTimestamp <= 0 ) {
         return false;
     }
-    else {
+    else { /* Write duration to the previous note */
         notes[ noteIndex - 1 ].duration = (int) timestamp - previousTimestamp;
         withinDurationLimit( notes[ noteIndex - 1 ].duration, noteIndex );
     }
     
-    previousTimestamp = (int) timestamp; // Executes every call
+    /* Store the timestamp between function calls */
+    previousTimestamp = (int) timestamp;
     return true;
-}
-
-
-void printNotes( struct Note *notes ) {
-    
-    int noteIndex = 0;
-    double finalRadianAngle = 0;
-    
-    while ( notes[ noteIndex ].midiNote >= 0 ) {
-            finalRadianAngle = printNote( notes[ noteIndex++ ] );
-    }
-    printf( "%.6f\n", sin( finalRadianAngle ) );
-     // In order to avoid phase issues, must print last sample of previous note at beginning of
-     // next note. This means that there will be one un-printed sample after the last note has
-     // 'finished' printing. This must then be printed to ensure the correct number of samples are
-     // printed for each note.
-     
-    return;
-}
-
-
-double printNote( struct Note note ) {
-    
-    static double lastRadianAngle = 0;
-        // Angle is stored between function calls.
-    double frequency = midiToFrequency(note.midiNote);
-    
-    for ( unsigned int sampleIndex = 0;
-         sampleIndex < note.duration * g_sampleRate / 1000; ++sampleIndex ) {
-        printf( "%.6f\n", sin( calculateAngle( sampleIndex, frequency, lastRadianAngle ) ) );
-    }
-    
-    /* Store the radian value used to calulate NEXT sample as this will be the starting sample of
-       the next oscillation. */
-    lastRadianAngle = calculateAngle( note.duration * g_sampleRate / 1000,
-                                     frequency, lastRadianAngle );
-    return lastRadianAngle;
-}
-
-
-double calculateAngle( unsigned int sampleIndex, double frequency, double lastRadianAngle ) {
-    return fmod( ( g_tau * frequency * sampleIndex / g_sampleRate ) + lastRadianAngle, g_tau );
 }
 
 
@@ -324,11 +389,13 @@ bool isOnlyInt( const char *string ) {
     bool retValue = true;
     
     for ( int index = 0; index < ( strlen( string ) / sizeof( char ) ); ++index ) {
-        if ( ( string[ index ] < 48 || 57 < string[ index ] ) && retValue ) {
-            retValue = false;
-        }
-        if ( index == 0 && string[ index ] == 45 ) { // If the first character is '-', override the
-            retValue = true;                         // retValue as this is still valid.
+        /* If character is outside numerical digit range */
+        if ( ( ( string[ index ] < 48 || 57 < string[ index ] ) &&
+              /* AND character is not '-' in first caracter of string */
+              !( index == 0 && string[ index ] == 45 ) ) &&
+            /* AND the expression has not already been evaulated to false */
+            retValue ) {
+            retValue = false; // Then there are some 'shady characters' in <string>.
         }
     }
     return retValue;
@@ -336,11 +403,12 @@ bool isOnlyInt( const char *string ) {
 
 
 bool withinDurationLimit( int duration, int noteIndex ) {
-    /*  Creates limit for maximum duration note accepted. Ensures that a loop isn't created when
-     *  printing the samples due to the sampleIndex overflowing. */
     
-    double overflowCheck = INT_MAX / duration;
+    /* Calculate maximum numnber of samples per milisecond for the duration of the note before
+     * overflow occurs. */
+    double overflowCheck = INT_MAX / duration; // By this point duration will be larger than 0
     
+    /* Checks that this is within the limits imposed by the sample rate */
     if ( overflowCheck < g_sampleRate / 1000 ) {
         char errorMessage[ 50 ];
         sprintf( errorMessage, "The duration of note number %d is too long!", noteIndex );
@@ -350,71 +418,56 @@ bool withinDurationLimit( int duration, int noteIndex ) {
 }
 
 
+void printNotes( struct Note *notes ) {
+    
+    int noteIndex = 0;
+    double finalRadianAngle = 0;
+    
+    while ( notes[ noteIndex ].midiNote >= 0 ) {
+            finalRadianAngle = printNote( notes[ noteIndex++ ] );
+    }
+    
+    /* In order to avoid phase issues, must print last sample of previous note at beginning of
+     * next note. This means that there will be one un-printed sample after the last note has
+     * 'finished' printing. This must then be printed to ensure the correct number of samples are
+     * printed for each note. */
+    printf( "%.6f\n", sin( finalRadianAngle ) );
+     
+    return;
+}
+
+
+double printNote( struct Note note ) {
+    
+    /* Phase offset angle is stored between function calls. */
+    static double lastRadianAngle = 0;
+
+    double frequency = midiToFrequency(note.midiNote);
+    
+    for ( unsigned int sampleIndex = 0;
+         sampleIndex < note.duration * g_sampleRate / 1000; ++sampleIndex ) {
+        printf( "%.6f\n", sin( calculateAngle( sampleIndex, frequency, lastRadianAngle ) ) );
+    }
+    
+    /* Store the radian value used to calulate NEXT sample as this will be the starting sample of
+       the next oscillation. */
+    lastRadianAngle = calculateAngle( note.duration * g_sampleRate / 1000,
+                                     frequency, lastRadianAngle );
+    return lastRadianAngle; // Return this so it can be printed after final note generated.
+}
+
+
 double midiToFrequency( const int midiNote ) {
     return ( pow( 2, ( midiNote - g_referenceMidiNote ) / 12. ) ) * g_referenceFrequency;
+}
+
+
+double calculateAngle( unsigned int sampleIndex, double frequency, double lastRadianAngle ) {
+    return fmod( ( g_tau * frequency * sampleIndex / g_sampleRate ) + lastRadianAngle, g_tau );
 }
 
 
 void error( const char *message, int errorCode ) {
     printf( "%s\n", message );
     exit( errorCode );
-}
-
-
-void printWithBorder( char *message[], int rows, int borderWidth ) {
-    /*  Prints message with a border.
-     *
-     *  <message> is array of strings. Each string is a line to be printed.
-     *  <rows> parameter is total number of lines.
-     *
-     *  Appearance can be set from within the funciton body.
-     *  If the a string input is too long for the row it will be cut short. */
-    
-    int pad = 1, numColumns = 80,
-        numRows = rows  + ( 2 * ( pad + borderWidth ) );
-        // Setting up border parameters
-    
-    for ( int r = 0; r < numRows; ++r ) {
-        for ( int c = 0; c < numColumns; ++c ) {
-            
-            /* If we're in the border rows or columns */
-            if ( r < borderWidth || r >= numRows - borderWidth ||
-                 c < borderWidth || c >= numColumns - borderWidth ) {
-                printf( "%c", '*' );
-            }
-            
-            /* If we're wthin the padding rows or columns */
-            else if ( r < pad + borderWidth || r >= numRows - borderWidth - pad ||
-                      c < pad + borderWidth || c >= numColumns - borderWidth - pad ) {
-                printf( "%c", ' ' );
-            }
-            
-            
-            else { // We must now be in the rows and columns with potential text
-                
-                /* Integer divide remainig whitespace by 2 */
-                int centreOffset = (int) ( ( numColumns -
-                            strlen( message[ r - borderWidth - pad ] ) ) / 2 ) - pad - borderWidth;
-                
-                /* Fill in whitespace before printing message */
-                if ( c - borderWidth - pad < centreOffset ) {
-                    printf( "%c", ' ' );
-                }
-                
-                /* Printing message */
-                else if ( strlen( message[ r - borderWidth - pad ] ) >
-                                  c - centreOffset - borderWidth - pad ) {
-                    printf( "%c",
-                            message[ r-borderWidth-pad ][ c - centreOffset - borderWidth - pad ] );
-                }
-                
-                /* Finishing whitespace */
-                else {
-                    printf( "%c", ' ' );
-                }
-            }
-        }
-        printf( "%c", '\n' );
-    }
-    return;
 }
