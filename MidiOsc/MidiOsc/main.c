@@ -58,7 +58,7 @@ void detectHelp( const char *string[] );
 
 /*      sendHelp()
  *  Contains the help documentation, prints this using printWithBorder and exits program. */
-void sendHelp();
+void sendHelp( void );
 
 /*      printWithBorder()
  *  Prints array of strings <message> as lines of text with a border of asterisks.
@@ -180,7 +180,7 @@ void detectHelp( const char *string[] ) {
 }
 
 
-void sendHelp() {
+void sendHelp( void ) {
     char *helpTitle[] = {
         "OLLY'S WONDEROUS COURSEWORK SUBMISSION",
         "-- Help Documentation --"
