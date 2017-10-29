@@ -341,7 +341,7 @@ void parseNewline( char *userInputBuffer ) {
 void writeNoteData( struct Note *notes, int noteIndex, long timestamp, long midiNote ) {
     
     if ( midiNote > 127 || midiNote < INT_MIN ) {
-        error( "The MIDI ‘note on’ message contains data out of bounds.",
+        error( "The MIDI 'note on' message contains data out of bounds.",
                 OUT_OF_BOUNDS_VALUE );
     }
     
