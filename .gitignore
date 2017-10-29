@@ -5,3 +5,7 @@ MidiOsc/MidiOsc.xcodeproj/
 *.dSYM/
 test
 MidiOsc
+UnitTests/CRAG/
+UnitTests/family_guy.txt
+UnitTests/python_test_suite/
+UnitTests/printedSamplePlayer
